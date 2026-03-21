@@ -27,7 +27,9 @@ export async function layout(
     </head>
     <body>
         <div class="header">
-            <a href="/">Typestamp</a>
+        <div class="logo">
+         <a href="/">Typestamp</a>
+        </div>
             ${
               nav.length > 0
                 ? `<div class="nav">

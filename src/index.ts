@@ -1,4 +1,5 @@
 import { Elysia, t } from "elysia";
+import { rateLimit } from "elysia-rate-limit";
 import { nanoid } from "nanoid";
 import {
   createHmac,
@@ -57,6 +58,12 @@ async function view(name: string) {
   return Bun.file(`views/${name}.html`).text();
 }
 
+function getIP(req: Request, server: { requestIP(req: Request): { address: string } | null } | null): string {
+  return req.headers.get("x-forwarded-for")?.split(",")[0].trim()
+    ?? server?.requestIP(req)?.address
+    ?? "unknown";
+}
+
 const mainNav = [
   { href: "/about", text: "How it works" },
   { href: "/ref", text: "Create a reference" },
@@ -93,21 +100,26 @@ const app = new Elysia()
     );
   })
   // API
-  .post(
-    "/api/refs",
-    async ({ body }) => {
-      const { label } = body;
-      const id = nanoid(10);
-      const now = Date.now();
-      await sql`INSERT INTO refs (id, label, created_at) VALUES (${id}, ${label}, ${now})`;
-      return { id, label };
-    },
-    {
-      body: t.Object({
-        label: t.String({ minLength: 1 }),
-      }),
-    },
+  .use(
+    new Elysia()
+      .use(rateLimit({ duration: 60000, max: 5, generator: getIP }))
+      .post(
+        "/api/refs",
+        async ({ body }) => {
+          const { label } = body;
+          const id = nanoid(10);
+          const now = Date.now();
+          await sql`INSERT INTO refs (id, label, created_at) VALUES (${id}, ${label}, ${now})`;
+          return { id, label };
+        },
+        {
+          body: t.Object({
+            label: t.String({ minLength: 1 }),
+          }),
+        },
+      ),
   )
+  .use(rateLimit({ duration: 60000, max: 30, generator: getIP }))
   .get("/api/refs/:id", async ({ params, set }) => {
     const { id } = params;
     const rows = await sql`SELECT id, label FROM refs WHERE id = ${id}`;
@@ -117,49 +129,53 @@ const app = new Elysia()
     }
     return { id: rows[0].id, label: rows[0].label };
   })
-  .post(
-    "/api/proofs",
-    async ({ body, set }) => {
-      const { content, events, ref_id } = body;
+  .use(
+    new Elysia()
+      .use(rateLimit({ duration: 60000, max: 10, generator: getIP }))
+      .post(
+        "/api/proofs",
+        async ({ body, set }) => {
+          const { content, events, ref_id } = body;
 
-      if (ref_id) {
-        const refs = await sql`SELECT id FROM refs WHERE id = ${ref_id}`;
-        if (refs.length === 0) {
-          set.status = 400;
-          return { error: "Invalid ref_id" };
-        }
-      }
+          if (ref_id) {
+            const refs = await sql`SELECT id FROM refs WHERE id = ${ref_id}`;
+            if (refs.length === 0) {
+              set.status = 400;
+              return { error: "Invalid ref_id" };
+            }
+          }
 
-      const id = nanoid(10);
-      const now = Date.now();
-      const expires_at = now + 72 * 60 * 60 * 1000;
+          const id = nanoid(10);
+          const now = Date.now();
+          const expires_at = now + 72 * 60 * 60 * 1000;
 
-      const keystrokesJson = JSON.stringify(events);
-      const compressed = await gzipAsync(Buffer.from(keystrokesJson, "utf8"));
+          const keystrokesJson = JSON.stringify(events);
+          const compressed = await gzipAsync(Buffer.from(keystrokesJson, "utf8"));
 
-      const key = deriveKey(id);
-      const { iv, tag, data } = encrypt(compressed, key);
+          const key = deriveKey(id);
+          const { iv, tag, data } = encrypt(compressed, key);
 
-      await sql`
-        INSERT INTO proofs (id, content, iv, tag, data, ref_id, created_at, expires_at)
-        VALUES (${id}, ${content}, ${iv}, ${tag}, ${data}, ${ref_id ?? null}, ${now}, ${expires_at})
-      `;
+          await sql`
+            INSERT INTO proofs (id, content, iv, tag, data, ref_id, created_at, expires_at)
+            VALUES (${id}, ${content}, ${iv}, ${tag}, ${data}, ${ref_id ?? null}, ${now}, ${expires_at})
+          `;
 
-      return { id, expires_at };
-    },
-    {
-      body: t.Object({
-        content: t.String(),
-        events: t.Array(
-          t.Object({
-            type: t.String(),
-            timestamp: t.Number(),
-            key: t.Optional(t.String()),
+          return { id, expires_at };
+        },
+        {
+          body: t.Object({
+            content: t.String(),
+            events: t.Array(
+              t.Object({
+                type: t.String(),
+                timestamp: t.Number(),
+                key: t.Optional(t.String()),
+              }),
+            ),
+            ref_id: t.Optional(t.Union([t.String(), t.Null()])),
           }),
-        ),
-        ref_id: t.Optional(t.Union([t.String(), t.Null()])),
-      }),
-    },
+        },
+      ),
   )
   .get("/api/proofs/:id", async ({ params, set }) => {
     const { id } = params;

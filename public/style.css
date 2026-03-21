@@ -38,6 +38,10 @@ a {
     margin-bottom: 2rem;
 }
 
+.logo a {
+    text-decoration: none;
+}
+
 /* index.html */
 .hero {
     max-width: 560px;

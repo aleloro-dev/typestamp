@@ -8,8 +8,9 @@
     "migrate": "bun run src/migrate.ts"
   },
   "dependencies": {
-    "elysia": "latest",
     "@elysiajs/static": "latest",
+    "elysia": "latest",
+    "elysia-rate-limit": "^4.5.1",
     "nanoid": "latest",
     "postgres": "latest"
   },
