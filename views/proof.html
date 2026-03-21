@@ -1,0 +1,197 @@
+<div class="container">
+    <p id="loading">Loading proof…</p>
+
+    <div id="error-view" class="hidden">
+        <h2 id="error-title">Error</h2>
+        <p id="error-msg"></p>
+    </div>
+
+    <div id="proof-view" class="hidden">
+        <h1 class="proof-heading">Proof of human authorship</h1>
+        <ul id="meta" class="proof-meta"></ul>
+        <h3>Content</h3>
+        <div class="content-box" id="content"></div>
+    </div>
+</div>
+
+<div class="site-footer">
+    Wanna write your own proof? <a href="/">Start here</a>
+</div>
+
+<script>
+    const id = location.pathname.split("/")[2];
+    const loadingEl = document.getElementById("loading");
+    const errorView = document.getElementById("error-view");
+    const proofView = document.getElementById("proof-view");
+
+    function showError(title, msg) {
+        loadingEl.classList.add("hidden");
+        document.getElementById("error-title").textContent = title;
+        document.getElementById("error-msg").textContent = msg;
+        errorView.classList.remove("hidden");
+    }
+
+    function formatDuration(ms) {
+        const s = Math.round(ms / 1000);
+        if (s < 60) return `${s}s`;
+        const m = Math.floor(s / 60),
+            rem = s % 60;
+        if (m < 60) return rem > 0 ? `${m}m ${rem}s` : `${m}m`;
+        const h = Math.floor(m / 60),
+            remM = m % 60;
+        return remM > 0 ? `${h}h ${remM}m` : `${h}h`;
+    }
+
+    function fmt(ms) {
+        const d = new Date(ms);
+        const pad = (n, l = 2) => String(n).padStart(l, "0");
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}, ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+
+    function addMeta(label, value) {
+        const meta = document.getElementById("meta");
+        const labelEl = document.createElement("span");
+        labelEl.className = "meta-label";
+        labelEl.textContent = label;
+        const valueEl = document.createElement("span");
+        valueEl.className = "meta-value";
+        valueEl.innerHTML = value;
+        meta.appendChild(labelEl);
+        meta.appendChild(valueEl);
+    }
+
+    const CACHE_TTL = 15 * 60 * 1000;
+    const cacheKey = `proof:${id}`;
+
+    function readCache() {
+        try {
+            const raw = localStorage.getItem(cacheKey);
+            if (!raw) return null;
+            const { data, cachedAt } = JSON.parse(raw);
+            if (Date.now() - cachedAt > CACHE_TTL) {
+                localStorage.removeItem(cacheKey);
+                return null;
+            }
+            return data;
+        } catch {
+            return null;
+        }
+    }
+
+    function writeCache(data) {
+        try {
+            localStorage.setItem(
+                cacheKey,
+                JSON.stringify({ data, cachedAt: Date.now() }),
+            );
+        } catch {}
+    }
+
+    function fetchProof() {
+        return fetch(`/api/proofs/${id}`)
+            .then(async (res) => {
+                if (res.status === 404)
+                    throw {
+                        title: "Proof not found",
+                        msg: "This proof does not exist.",
+                    };
+                if (res.status === 410)
+                    throw {
+                        title: "Proof expired",
+                        msg: "Proofs are kept for 72 hours after creation.",
+                    };
+                if (!res.ok)
+                    throw {
+                        title: "Error",
+                        msg: `Server error (${res.status}).`,
+                    };
+                return res.json();
+            })
+            .then((data) => {
+                writeCache(data);
+                return data;
+            });
+    }
+
+    if (!id) {
+        showError("Missing proof ID", "No proof ID was provided in the URL.");
+    } else {
+        Promise.resolve(readCache() ?? fetchProof())
+            .then((data) => {
+                loadingEl.classList.add("hidden");
+
+                const events = data.events;
+                const keyEvents = events.filter((e) => e.type === "key");
+
+                function calcActiveDuration(evts) {
+                    let total = 0,
+                        lastStart = null;
+                    for (const e of evts) {
+                        if (e.type === "start" || e.type === "resume")
+                            lastStart = e.timestamp;
+                        if (
+                            (e.type === "pause" || e.type === "finish") &&
+                            lastStart !== null
+                        ) {
+                            total += e.timestamp - lastStart;
+                            lastStart = null;
+                        }
+                    }
+                    return total;
+                }
+
+                const startEvent = events.find((e) => e.type === "start");
+                const finishEvent = [...events]
+                    .reverse()
+                    .find((e) => e.type === "finish");
+
+                const renderProof = (refLabel) => {
+                    if (refLabel) addMeta("Reference", refLabel);
+                    addMeta("ID", id);
+                    addMeta(
+                        "Keystrokes",
+                        `${keyEvents.length.toLocaleString()} — <a href="/proofs/${id}/keystrokes">more details</a>`,
+                    );
+                    addMeta(
+                        "Active duration",
+                        formatDuration(calcActiveDuration(events)),
+                    );
+                    addMeta(
+                        "Started",
+                        fmt(
+                            startEvent
+                                ? startEvent.timestamp
+                                : events[0].timestamp,
+                        ),
+                    );
+                    addMeta(
+                        "Ended",
+                        fmt(
+                            finishEvent
+                                ? finishEvent.timestamp
+                                : events[events.length - 1].timestamp,
+                        ),
+                    );
+                    addMeta("Expires", fmt(data.expires_at));
+                    document.getElementById("content").textContent =
+                        data.content;
+                    proofView.classList.remove("hidden");
+                };
+
+                if (data.ref_id) {
+                    fetch(`/refs/${data.ref_id}`)
+                        .then((r) => (r.ok ? r.json() : null))
+                        .then((ref) => renderProof(ref?.label ?? null))
+                        .catch(() => renderProof(null));
+                } else {
+                    renderProof(null);
+                }
+            })
+            .catch((err) =>
+                showError(
+                    err.title || "Failed to load",
+                    err.msg || err.message || "Unexpected error.",
+                ),
+            );
+    }
+</script>

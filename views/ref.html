@@ -1,0 +1,95 @@
+<div class="container">
+    <h1>Create a reference</h1>
+    <p class="hint">
+        A reference scopes a proof to a specific purpose - for example, a job
+        application or an assignment. This prevents writers from reusing proofs
+        for different purposes.
+    </p>
+    <p class="hint">
+        Share the generated link with writers so their proof is tied to your
+        context.
+    </p>
+
+    <div id="form-view">
+        <div class="actions ref-form">
+            <input
+                id="label-input"
+                class="share-input"
+                type="text"
+                placeholder="e.g. Software Engineer Cover Letter - Ford Q2 2026"
+            />
+            <button class="primary" id="create-btn">Create</button>
+        </div>
+        <p id="form-error" class="error hidden"></p>
+    </div>
+
+    <div id="result" class="result hidden">
+        <h2>Reference created</h2>
+        <p id="ref-label" class="hint"></p>
+        <label>Share this link with writers</label>
+        <div class="share-row">
+            <input class="share-input" id="share-link" type="text" readonly />
+            <button class="copy-btn" id="copy-btn">Copy</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const labelInput = document.getElementById("label-input");
+    const createBtn = document.getElementById("create-btn");
+    const formError = document.getElementById("form-error");
+    const resultEl = document.getElementById("result");
+    const refLabelEl = document.getElementById("ref-label");
+    const shareLinkEl = document.getElementById("share-link");
+    const copyBtn = document.getElementById("copy-btn");
+
+    labelInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") createBtn.click();
+    });
+
+    createBtn.addEventListener("click", async () => {
+        const label = labelInput.value.trim();
+        if (!label) {
+            formError.textContent = "Please enter a label.";
+            formError.classList.remove("hidden");
+            return;
+        }
+
+        createBtn.disabled = true;
+        createBtn.textContent = "Creating…";
+        formError.classList.add("hidden");
+
+        try {
+            const res = await fetch("/refs", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ label }),
+            });
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error || `Server error (${res.status})`);
+            }
+
+            const { id } = await res.json();
+            refLabelEl.textContent = label;
+            shareLinkEl.value = `${location.origin}/?ref=${id}`;
+            document.getElementById("form-view").classList.add("hidden");
+            resultEl.classList.remove("hidden");
+            shareLinkEl.select();
+        } catch (err) {
+            formError.textContent = err.message || "Failed to create reference.";
+            formError.classList.remove("hidden");
+            createBtn.disabled = false;
+        } finally {
+            createBtn.textContent = "Create";
+        }
+    });
+
+    copyBtn.addEventListener("click", () => {
+        navigator.clipboard.writeText(shareLinkEl.value).then(() => {
+            copyBtn.textContent = "Copied!";
+            setTimeout(() => (copyBtn.textContent = "Copy"), 2000);
+        });
+    });
+</script>

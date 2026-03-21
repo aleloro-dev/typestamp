@@ -1,0 +1,335 @@
+<div class="container">
+    <h1>Prove you wrote it</h1>
+    <p class="hint">
+        Typestamp captures every keystroke as you write, which serves as a proof
+        of human authorship.
+    </p>
+    <p class="hint">
+        Once saved, your writing session is compressed, encrypted, and stored.
+        You can share it with a secret link.
+    </p>
+    <p class="hint">
+        When you click on 'Start session' the tracking will begin. You can pause
+        it and resume it if needed.
+    </p>
+
+    <div id="ref-banner" class="ref-banner hidden">
+        <span id="ref-label"></span>
+    </div>
+
+    <div id="restore-banner" class="restore-banner hidden">
+        <span>You have an unfinished session.</span>
+        <div class="restore-actions">
+            <button id="restore-btn">Resume draft</button>
+            <button id="discard-btn">Discard</button>
+        </div>
+    </div>
+
+    <div class="controls-top">
+        <button class="primary" id="start-btn">Start session</button>
+        <button id="pause-btn" class="hidden">Pause</button>
+    </div>
+
+    <textarea
+        id="editor"
+        placeholder="Start your session to unlock the textarea"
+        spellcheck="true"
+        autocomplete="off"
+        disabled
+    ></textarea>
+
+    <div class="editor-bottom">
+        <div class="actions">
+            <button class="primary" id="save-btn" disabled>Save proof</button>
+            <button id="clear-btn">Discard</button>
+        </div>
+        <div class="stats">
+            <span id="key-count">0 keystrokes</span>
+            <span id="word-count">0 words</span>
+            <span id="duration">0s</span>
+        </div>
+    </div>
+
+    <div id="result" class="result hidden">
+        <h2>Proof saved</h2>
+        <label>Share link</label>
+        <div class="share-row">
+            <input class="share-input" id="share-link" type="text" readonly />
+            <button class="copy-btn" id="copy-btn">Copy</button>
+        </div>
+        <p class="expiry-note" id="expiry-note"></p>
+    </div>
+
+    <p id="error" class="error hidden"></p>
+</div>
+
+<script>
+    const editor = document.getElementById("editor");
+    const saveBtn = document.getElementById("save-btn");
+    const clearBtn = document.getElementById("clear-btn");
+    const startBtn = document.getElementById("start-btn");
+    const pauseBtn = document.getElementById("pause-btn");
+    const restoreBanner = document.getElementById("restore-banner");
+    const restoreBtn = document.getElementById("restore-btn");
+    const discardBtn = document.getElementById("discard-btn");
+    const resultEl = document.getElementById("result");
+    const shareLinkEl = document.getElementById("share-link");
+    const copyBtn = document.getElementById("copy-btn");
+    const expiryNote = document.getElementById("expiry-note");
+    const errorEl = document.getElementById("error");
+    const keyCountEl = document.getElementById("key-count");
+    const wordCountEl = document.getElementById("word-count");
+    const durationEl = document.getElementById("duration");
+
+    const STORAGE_KEY = "typestamp:session";
+    const refBanner = document.getElementById("ref-banner");
+    const refLabelEl = document.getElementById("ref-label");
+
+    let refId = new URLSearchParams(location.search).get("ref");
+    if (refId) {
+        fetch(`/refs/${refId}`)
+            .then((r) => (r.ok ? r.json() : Promise.reject()))
+            .then((ref) => {
+                refLabelEl.textContent = `Reference: "${ref.label}"`;
+                refBanner.classList.remove("hidden");
+            })
+            .catch(() => {
+                refId = null;
+            });
+    }
+
+    let events = [];
+    let state = "idle";
+    let accumulatedMs = 0;
+    let intervalStart = null;
+    let durationTimer = null;
+    let sessionId = null;
+    let saveDebounceTimer = null;
+
+    function getElapsedMs() {
+        if (state === "active") {
+            return accumulatedMs + (Date.now() - intervalStart);
+        }
+        return accumulatedMs;
+    }
+
+    function updateDuration() {
+        const secs = Math.floor(getElapsedMs() / 1000);
+        const m = Math.floor(secs / 60),
+            s = secs % 60;
+        durationEl.textContent = m > 0 ? `${m}m ${s}s` : `${secs}s`;
+    }
+
+    function updateStats() {
+        const kc = events.filter((e) => e.type === "key").length;
+        keyCountEl.textContent = kc === 1 ? "1 keystroke" : `${kc} keystrokes`;
+        const words = editor.value.trim().split(/\s+/).filter(Boolean).length;
+        wordCountEl.textContent = words === 1 ? "1 word" : `${words} words`;
+        saveBtn.disabled =
+            state === "idle" || editor.value.trim().length === 0 || kc === 0;
+    }
+
+    function applyState() {
+        startBtn.classList.toggle("hidden", state !== "idle");
+        pauseBtn.classList.toggle("hidden", state === "idle");
+        pauseBtn.textContent = state === "active" ? "Pause" : "Resume";
+        saveBtn.classList.toggle("hidden", state === "idle");
+        clearBtn.classList.toggle("hidden", state === "idle");
+        editor.disabled = state !== "active";
+        editor.placeholder =
+            state === "idle"
+                ? "Start your session to unlock the textarea"
+                : "Start typing here…";
+        updateStats();
+    }
+
+    function persistSession() {
+        if (!sessionId) return;
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({
+                id: sessionId,
+                events,
+                content: editor.value,
+                accumulatedMs: getElapsedMs(),
+            }),
+        );
+    }
+
+    function clearPersistedSession() {
+        localStorage.removeItem(STORAGE_KEY);
+        sessionId = null;
+    }
+
+    function scheduleSave() {
+        clearTimeout(saveDebounceTimer);
+        saveDebounceTimer = setTimeout(persistSession, 2000);
+    }
+
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed.events && parsed.events.length > 0) {
+                restoreBanner.classList.remove("hidden");
+
+                restoreBtn.addEventListener("click", () => {
+                    sessionId = parsed.id;
+                    events = parsed.events;
+                    editor.value = parsed.content || "";
+                    accumulatedMs = parsed.accumulatedMs || 0;
+
+                    const now = Date.now();
+                    events.push({ type: "restore", timestamp: now });
+                    intervalStart = now;
+                    state = "active";
+
+                    restoreBanner.classList.add("hidden");
+                    durationTimer = setInterval(updateDuration, 1000);
+                    applyState();
+                    updateDuration();
+                    editor.focus();
+                    persistSession();
+                });
+
+                discardBtn.addEventListener("click", () => {
+                    clearPersistedSession();
+                    restoreBanner.classList.add("hidden");
+                });
+            }
+        }
+    } catch (e) {
+        localStorage.removeItem(STORAGE_KEY);
+    }
+
+    window.addEventListener("beforeunload", () => {
+        if (!sessionId) return;
+        if (state === "active") {
+            const now = Date.now();
+            accumulatedMs += now - intervalStart;
+            intervalStart = null;
+            events.push({ type: "suspend", timestamp: now });
+        }
+        persistSession();
+    });
+
+    startBtn.addEventListener("click", () => {
+        sessionId = crypto.randomUUID();
+        state = "active";
+        intervalStart = Date.now();
+        events.push({ type: "start", timestamp: intervalStart });
+        durationTimer = setInterval(updateDuration, 1000);
+        applyState();
+        editor.focus();
+        persistSession();
+    });
+
+    pauseBtn.addEventListener("click", () => {
+        const now = Date.now();
+        if (state === "active") {
+            accumulatedMs += now - intervalStart;
+            intervalStart = null;
+            events.push({ type: "pause", timestamp: now });
+            state = "paused";
+            clearInterval(durationTimer);
+            durationTimer = null;
+        } else if (state === "paused") {
+            intervalStart = now;
+            events.push({ type: "resume", timestamp: now });
+            state = "active";
+            durationTimer = setInterval(updateDuration, 1000);
+            editor.focus();
+        }
+        applyState();
+        persistSession();
+    });
+
+    editor.addEventListener("paste", (e) => e.preventDefault());
+    editor.addEventListener("contextmenu", (e) => e.preventDefault());
+
+    editor.addEventListener("keydown", (e) => {
+        events.push({ type: "key", timestamp: Date.now(), key: e.key });
+        updateStats();
+        scheduleSave();
+    });
+
+    editor.addEventListener("input", updateStats);
+
+    clearBtn.addEventListener("click", () => {
+        if (
+            events.length > 0 &&
+            !confirm("Discard this session? This cannot be undone.")
+        )
+            return;
+        clearPersistedSession();
+        events = [];
+        state = "idle";
+        accumulatedMs = 0;
+        intervalStart = null;
+        clearInterval(durationTimer);
+        durationTimer = null;
+        editor.value = "";
+        durationEl.textContent = "0s";
+        resultEl.classList.add("hidden");
+        errorEl.classList.add("hidden");
+        applyState();
+    });
+
+    saveBtn.addEventListener("click", async () => {
+        const now = Date.now();
+        if (state === "active") {
+            accumulatedMs += now - intervalStart;
+            intervalStart = null;
+            clearInterval(durationTimer);
+            durationTimer = null;
+        }
+        events.push({ type: "finish", timestamp: now });
+        state = "paused";
+        applyState();
+
+        saveBtn.disabled = true;
+        saveBtn.textContent = "Saving…";
+        errorEl.classList.add("hidden");
+
+        try {
+            const res = await fetch("/api/proofs", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    content: editor.value,
+                    events,
+                    ref_id: refId ?? null,
+                }),
+            });
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error || `Server error (${res.status})`);
+            }
+
+            const { id, expires_at } = await res.json();
+            clearPersistedSession();
+            shareLinkEl.value = `${location.origin}/proofs/${id}`;
+            expiryNote.textContent = `Expires ${new Date(expires_at).toLocaleString()}`;
+            resultEl.classList.remove("hidden");
+            shareLinkEl.select();
+        } catch (err) {
+            errorEl.textContent = err.message || "Failed to save proof.";
+            errorEl.classList.remove("hidden");
+            saveBtn.disabled = false;
+        } finally {
+            saveBtn.textContent = "Save proof";
+        }
+    });
+
+    copyBtn.addEventListener("click", () => {
+        navigator.clipboard.writeText(shareLinkEl.value).then(() => {
+            copyBtn.textContent = "Copied!";
+            setTimeout(() => {
+                copyBtn.textContent = "Copy";
+            }, 2000);
+        });
+    });
+
+    applyState();
+</script>
