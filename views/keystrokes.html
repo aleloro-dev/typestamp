@@ -46,19 +46,32 @@
             const raw = localStorage.getItem(cacheKey);
             if (!raw) return null;
             const { data, cachedAt } = JSON.parse(raw);
-            if (Date.now() - cachedAt > CACHE_TTL) { localStorage.removeItem(cacheKey); return null; }
+            if (Date.now() - cachedAt > CACHE_TTL) {
+                localStorage.removeItem(cacheKey);
+                return null;
+            }
             return data;
-        } catch { return null; }
+        } catch {
+            return null;
+        }
     }
 
     function fetchProof() {
-        return fetch(`/api/proofs/${id}`)
-            .then(async (res) => {
-                if (res.status === 404) throw { title: "Proof not found", msg: "This proof does not exist." };
-                if (res.status === 410) throw { title: "Proof expired", msg: "Proofs are kept for 72 hours after creation." };
-                if (!res.ok) throw { title: "Error", msg: `Server error (${res.status}).` };
-                return res.json();
-            });
+        return fetch(`/api/proofs/${id}`).then(async (res) => {
+            if (res.status === 404)
+                throw {
+                    title: "Proof not found",
+                    msg: "This proof does not exist.",
+                };
+            if (res.status === 410)
+                throw {
+                    title: "Proof expired",
+                    msg: "Proofs are kept for 72 hours after creation.",
+                };
+            if (!res.ok)
+                throw { title: "Error", msg: `Server error (${res.status}).` };
+            return res.json();
+        });
     }
 
     if (!id) {
@@ -79,14 +92,25 @@
                     const pad = (n, l = 2) => String(n).padStart(l, "0");
                     const ts = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${pad(d.getMilliseconds(), 3)}`;
                     const isControl = e.type !== "key";
-                    const keyCell = e.type === "key" ? (e.key.length === 1 ? e.key : `[${e.key}]`) : "";
+                    const keyCell =
+                        e.type === "key"
+                            ? e.key.length === 1
+                                ? e.key
+                                : `[${e.key}]`
+                            : "";
                     const lifecycleColors = {
-                        start: "#5dca8a", finish: "#5dca8a", resume: "#5dca8a", restore: "#5dca8a",
-                        pause: "#e8a44a", suspend: "#e8a44a",
+                        start: "#5dca8a",
+                        finish: "#5dca8a",
+                        resume: "#5dca8a",
+                        restore: "#5dca8a",
+                        pause: "#e8a44a",
+                        suspend: "#e8a44a",
                     };
                     const tr = document.createElement("tr");
                     tr.style.borderBottom = "1px solid #333";
-                    tr.style.color = isControl ? (lifecycleColors[e.type] ?? "#888") : "beige";
+                    tr.style.color = isControl
+                        ? (lifecycleColors[e.type] ?? "#888")
+                        : "beige";
                     tr.innerHTML = `
                         <td class="audit-td audit-td-index">${i + 1}</td>
                         <td class="audit-td">${e.type}</td>
@@ -98,6 +122,11 @@
 
                 keystrokeView.classList.remove("hidden");
             })
-            .catch((err) => showError(err.title || "Failed to load", err.msg || err.message || "Unexpected error."));
+            .catch((err) =>
+                showError(
+                    err.title || "Failed to load",
+                    err.msg || err.message || "Unexpected error.",
+                ),
+            );
     }
 </script>

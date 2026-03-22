@@ -60,7 +60,7 @@
         formError.classList.add("hidden");
 
         try {
-            const res = await fetch("/refs", {
+            const res = await fetch("/api/refs", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ label }),

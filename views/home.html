@@ -87,7 +87,7 @@
 
     let refId = new URLSearchParams(location.search).get("ref");
     if (refId) {
-        fetch(`/refs/${refId}`)
+        fetch(`/api/refs/${refId}`)
             .then((r) => (r.ok ? r.json() : Promise.reject()))
             .then((ref) => {
                 refLabelEl.textContent = `Reference: "${ref.label}"`;
@@ -208,6 +208,7 @@
             const now = Date.now();
             accumulatedMs += now - intervalStart;
             intervalStart = null;
+            state = "paused";
             events.push({ type: "suspend", timestamp: now });
         }
         persistSession();
@@ -248,6 +249,10 @@
     editor.addEventListener("contextmenu", (e) => e.preventDefault());
 
     editor.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            document.execCommand("insertText", false, "\n\n");
+        }
         events.push({ type: "key", timestamp: Date.now(), key: e.key });
         updateStats();
         scheduleSave();

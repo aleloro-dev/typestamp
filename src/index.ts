@@ -66,14 +66,13 @@ function getIP(req: Request, server: { requestIP(req: Request): { address: strin
 
 const mainNav = [
   { href: "/about", text: "How it works" },
-  { href: "/ref", text: "Create a reference" },
 ];
 
 const app = new Elysia()
   // Pages
   .get("/", async ({ set }) => {
     set.headers["content-type"] = "text/html; charset=utf-8";
-    return layout("Typestamp", mainNav, await view("home"));
+    return layout("Typestamp", mainNav, await view("home"), false);
   })
   .get("/proofs/:id", async ({ set }) => {
     set.headers["content-type"] = "text/html; charset=utf-8";
@@ -89,13 +88,15 @@ const app = new Elysia()
       "Create reference — Typestamp",
       [{ href: "/about", text: "How it works" }],
       await view("ref"),
+      true,
+      false,
     );
   })
   .get("/about", async ({ set }) => {
     set.headers["content-type"] = "text/html; charset=utf-8";
     return layout(
       "How it works — Typestamp",
-      [{ href: "/ref", text: "Create a reference" }],
+      [],
       await view("about"),
     );
   })
@@ -149,15 +150,29 @@ const app = new Elysia()
           const now = Date.now();
           const expires_at = now + 72 * 60 * 60 * 1000;
 
-          const keystrokesJson = JSON.stringify(events);
-          const compressed = await gzipAsync(Buffer.from(keystrokesJson, "utf8"));
+          const keystroke_count = events.filter((e: { type: string }) => e.type === "key").length;
+          const event_count = events.length;
+
+          let active_duration = 0;
+          let lastStart: number | null = null;
+          for (const e of events as { type: string; timestamp: number }[]) {
+            if (e.type === "start" || e.type === "resume") lastStart = e.timestamp;
+            if ((e.type === "pause" || e.type === "finish") && lastStart !== null) {
+              active_duration += e.timestamp - lastStart;
+              lastStart = null;
+            }
+          }
+          active_duration = Math.round(active_duration / 1000);
+
+          const payload = JSON.stringify({ content, events });
+          const compressed = await gzipAsync(Buffer.from(payload, "utf8"));
 
           const key = deriveKey(id);
           const { iv, tag, data } = encrypt(compressed, key);
 
           await sql`
-            INSERT INTO proofs (id, content, iv, tag, data, ref_id, created_at, expires_at)
-            VALUES (${id}, ${content}, ${iv}, ${tag}, ${data}, ${ref_id ?? null}, ${now}, ${expires_at})
+            INSERT INTO proofs (id, iv, tag, data, ref_id, created_at, expires_at, event_count, keystroke_count, active_duration)
+            VALUES (${id}, ${iv}, ${tag}, ${data}, ${ref_id ?? null}, ${now}, ${expires_at}, ${event_count}, ${keystroke_count}, ${active_duration})
           `;
 
           return { id, expires_at };
@@ -181,7 +196,7 @@ const app = new Elysia()
     const { id } = params;
 
     const rows = await sql`
-      SELECT id, content, iv, tag, data, ref_id, created_at, expires_at
+      SELECT id, iv, tag, data, ref_id, created_at, expires_at
       FROM proofs
       WHERE id = ${id}
     `;
@@ -202,10 +217,10 @@ const app = new Elysia()
     const key = deriveKey(id);
     const decrypted = decrypt(proof.iv, proof.tag, proof.data, key);
     const decompressed = await gunzipAsync(decrypted);
-    const events = JSON.parse(decompressed.toString("utf8"));
+    const { content, events } = JSON.parse(decompressed.toString("utf8"));
 
     return {
-      content: proof.content,
+      content,
       events,
       ref_id: proof.ref_id ?? null,
       created_at: Number(proof.created_at),

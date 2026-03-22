@@ -14,9 +14,6 @@
     </div>
 </div>
 
-<div class="site-footer">
-    Wanna write your own proof? <a href="/">Start here</a>
-</div>
 
 <script>
     const id = location.pathname.split("/")[2];
@@ -179,7 +176,7 @@
                 };
 
                 if (data.ref_id) {
-                    fetch(`/refs/${data.ref_id}`)
+                    fetch(`/api/refs/${data.ref_id}`)
                         .then((r) => (r.ok ? r.json() : null))
                         .then((ref) => renderProof(ref?.label ?? null))
                         .catch(() => renderProof(null));
