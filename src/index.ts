@@ -58,34 +58,46 @@ async function view(name: string) {
   return Bun.file(`views/${name}.html`).text();
 }
 
-function getIP(req: Request, server: { requestIP(req: Request): { address: string } | null } | null): string {
-  return req.headers.get("x-forwarded-for")?.split(",")[0].trim()
-    ?? server?.requestIP(req)?.address
-    ?? "unknown";
+function getIP(
+  req: Request,
+  server: { requestIP(req: Request): { address: string } | null } | null,
+): string {
+  return (
+    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+    server?.requestIP(req)?.address ??
+    "unknown"
+  );
 }
 
-const mainNav = [
-  { href: "/about", text: "How it works" },
-];
+const mainNav = [{ href: "/about", text: "How it works" }];
 
 const app = new Elysia()
   // Pages
   .get("/", async ({ set }) => {
     set.headers["content-type"] = "text/html; charset=utf-8";
-    return layout("Typestamp", mainNav, await view("home"), false);
+    return layout(
+      "Create proofs of human authorship for written content - Typestamp",
+      mainNav,
+      await view("home"),
+      false,
+    );
   })
   .get("/proofs/:id", async ({ set }) => {
     set.headers["content-type"] = "text/html; charset=utf-8";
-    return layout("Verify — Typestamp", mainNav, await view("proof"));
+    return layout("Proofs - Typestamp", mainNav, await view("proof"));
   })
   .get("/proofs/:id/keystrokes", async ({ set }) => {
     set.headers["content-type"] = "text/html; charset=utf-8";
-    return layout("Keystrokes — Typestamp", mainNav, await view("keystrokes"));
+    return layout(
+      "Keystroke audit - Typestamp",
+      mainNav,
+      await view("keystrokes"),
+    );
   })
   .get("/ref", async ({ set }) => {
     set.headers["content-type"] = "text/html; charset=utf-8";
     return layout(
-      "Create reference — Typestamp",
+      "Create a reference - Typestamp",
       [{ href: "/about", text: "How it works" }],
       await view("ref"),
       true,
@@ -94,11 +106,7 @@ const app = new Elysia()
   })
   .get("/about", async ({ set }) => {
     set.headers["content-type"] = "text/html; charset=utf-8";
-    return layout(
-      "How it works — Typestamp",
-      [],
-      await view("about"),
-    );
+    return layout("How it works - Typestamp", [], await view("about"));
   })
   // API
   .use(
@@ -150,14 +158,20 @@ const app = new Elysia()
           const now = Date.now();
           const expires_at = now + 72 * 60 * 60 * 1000;
 
-          const keystroke_count = events.filter((e: { type: string }) => e.type === "key").length;
+          const keystroke_count = events.filter(
+            (e: { type: string }) => e.type === "key",
+          ).length;
           const event_count = events.length;
 
           let active_duration = 0;
           let lastStart: number | null = null;
           for (const e of events as { type: string; timestamp: number }[]) {
-            if (e.type === "start" || e.type === "resume") lastStart = e.timestamp;
-            if ((e.type === "pause" || e.type === "finish") && lastStart !== null) {
+            if (e.type === "start" || e.type === "resume")
+              lastStart = e.timestamp;
+            if (
+              (e.type === "pause" || e.type === "finish") &&
+              lastStart !== null
+            ) {
               active_duration += e.timestamp - lastStart;
               lastStart = null;
             }

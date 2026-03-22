@@ -14,7 +14,6 @@
     </div>
 </div>
 
-
 <script>
     const id = location.pathname.split("/")[2];
     const loadingEl = document.getElementById("loading");
@@ -147,7 +146,7 @@
                     addMeta("ID", id);
                     addMeta(
                         "Keystrokes",
-                        `${keyEvents.length.toLocaleString()} — <a href="/proofs/${id}/keystrokes">more details</a>`,
+                        `${keyEvents.length.toLocaleString()} (<a href="/proofs/${id}/keystrokes">see keystroke audit</a>)`,
                     );
                     addMeta(
                         "Active duration",
