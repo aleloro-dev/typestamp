@@ -278,6 +278,11 @@ button:disabled {
     margin-bottom: 1rem;
 }
 
+#audit-link {
+    display: block;
+    margin-bottom: 1.5rem;
+}
+
 .proof-meta {
     list-style: none;
     padding: 0;

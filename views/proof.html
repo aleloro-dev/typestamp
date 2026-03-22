@@ -9,6 +9,7 @@
     <div id="proof-view" class="hidden">
         <h1 class="proof-heading">Proof of human authorship</h1>
         <ul id="meta" class="proof-meta"></ul>
+        <a id="audit-link" href="#">View keystroke audit →</a>
         <h3>Content</h3>
         <div class="content-box" id="content"></div>
     </div>
@@ -16,6 +17,7 @@
 
 <script>
     const id = location.pathname.split("/")[2];
+    document.getElementById("audit-link").href = `/proofs/${id}/keystrokes`;
     const loadingEl = document.getElementById("loading");
     const errorView = document.getElementById("error-view");
     const proofView = document.getElementById("proof-view");
@@ -144,10 +146,7 @@
                 const renderProof = (refLabel) => {
                     if (refLabel) addMeta("Reference", refLabel);
                     addMeta("ID", id);
-                    addMeta(
-                        "Keystrokes",
-                        `${keyEvents.length.toLocaleString()} (<a href="/proofs/${id}/keystrokes">see keystroke audit</a>)`,
-                    );
+                    addMeta("Keystrokes", keyEvents.length.toLocaleString());
                     addMeta(
                         "Active duration",
                         formatDuration(calcActiveDuration(events)),
