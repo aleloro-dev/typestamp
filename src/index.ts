@@ -111,7 +111,7 @@ const app = new Elysia()
   // API
   .use(
     new Elysia()
-      .use(rateLimit({ duration: 60000, max: 5, generator: getIP }))
+      .use(rateLimit({ duration: 3600000, max: 2, generator: getIP }))
       .post(
         "/api/refs",
         async ({ body }) => {
@@ -140,7 +140,7 @@ const app = new Elysia()
   })
   .use(
     new Elysia()
-      .use(rateLimit({ duration: 60000, max: 10, generator: getIP }))
+      .use(rateLimit({ duration: 3600000, max: 3, generator: getIP }))
       .post(
         "/api/proofs",
         async ({ body, set }) => {
