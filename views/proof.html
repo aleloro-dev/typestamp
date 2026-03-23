@@ -48,10 +48,25 @@
         return remM > 0 ? `${h}h ${remM}m` : `${h}h`;
     }
 
-    function fmt(ms) {
+    function fmtDate(ms) {
         const d = new Date(ms);
         const pad = (n, l = 2) => String(n).padStart(l, "0");
-        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}, ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    }
+
+    function fmtTime(ms) {
+        const d = new Date(ms);
+        const pad = (n, l = 2) => String(n).padStart(l, "0");
+        return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+
+    function fmtExpiry(ms) {
+        const diff = ms - Date.now();
+        if (diff <= 0) return "expired";
+        const totalMins = Math.floor(diff / 60000);
+        if (totalMins < 60) return `${totalMins} minute${totalMins !== 1 ? "s" : ""}`;
+        const hours = Math.floor(totalMins / 60);
+        return `${hours} hour${hours !== 1 ? "s" : ""}`;
     }
 
     function addMeta(label, value) {
@@ -167,23 +182,10 @@
                         "Active duration",
                         formatDuration(calcActiveDuration(events)),
                     );
-                    addMeta(
-                        "Started at",
-                        fmt(
-                            startEvent
-                                ? startEvent.timestamp
-                                : events[0].timestamp,
-                        ),
-                    );
-                    addMeta(
-                        "Ended at",
-                        fmt(
-                            finishEvent
-                                ? finishEvent.timestamp
-                                : events[events.length - 1].timestamp,
-                        ),
-                    );
-                    addMeta("Expires at", fmt(data.expires_at));
+                    const startTs = startEvent ? startEvent.timestamp : events[0].timestamp;
+                    addMeta("Start date", fmtDate(startTs));
+                    addMeta("Start time", fmtTime(startTs));
+                    addMeta("Expires in", fmtExpiry(data.expires_at));
                     document.getElementById("content").textContent =
                         data.content;
                     proofView.classList.remove("hidden");
