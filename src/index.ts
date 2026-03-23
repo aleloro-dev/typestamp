@@ -70,12 +70,6 @@ function getIP(
   );
 }
 
-function routeKey(
-  req: Request,
-  server: { requestIP(req: Request): { address: string } | null } | null,
-): string {
-  return `${getIP(req, server)}:${new URL(req.url).pathname}`;
-}
 
 const mainNav = [{ href: "/about", text: "How it works" }];
 
@@ -144,19 +138,15 @@ const app = new Elysia()
         },
       ),
   )
-  .use(
-    new Elysia()
-      .use(rateLimit({ duration: 60000, max: 30, generator: routeKey }))
-      .get("/api/refs/:id", async ({ params, set }) => {
-        const { id } = params;
-        const rows = await sql`SELECT id, label FROM refs WHERE id = ${id}`;
-        if (rows.length === 0) {
-          set.status = 404;
-          return { error: "Not found" };
-        }
-        return { id: rows[0].id, label: rows[0].label };
-      }),
-  )
+  .get("/api/refs/:id", async ({ params, set }) => {
+    const { id } = params;
+    const rows = await sql`SELECT id, label FROM refs WHERE id = ${id}`;
+    if (rows.length === 0) {
+      set.status = 404;
+      return { error: "Not found" };
+    }
+    return { id: rows[0].id, label: rows[0].label };
+  })
   .use(
     new Elysia()
       .use(rateLimit({ duration: 3600000, max: 3, generator: getIP }))
@@ -232,7 +222,6 @@ const app = new Elysia()
   )
   .use(
     new Elysia()
-      .use(rateLimit({ duration: 60000, max: 30, generator: routeKey }))
       .get("/api/proofs/:id", async ({ params, set }) => {
         const { id } = params;
 
