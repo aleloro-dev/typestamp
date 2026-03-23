@@ -1,33 +1,38 @@
 <div class="container">
     <h1>How it works</h1>
     <p class="hint">
-        Typestamp creates verifiable proofs that a human wrote a piece of text
-        by recording every keystroke made during the writing session.
+        Typestamp creates verifiable proofs of effort by recording every
+        keystroke made during a writing session with precise timestamps.
     </p>
 
     <h3>The proof</h3>
     <p class="hint">
         When you write on Typestamp, every key press is captured with a precise
-        timestamp. Paste is disabled -- the only way to produce text is to type
-        it character by character. Once you save, the full keystroke log is
-        compressed, encrypted, and stored. You get a link anyone can use to
-        inspect it.
+        timestamp. The proof tracks the content length and typed characters with
+        every event, so copypasting can be easily flagged. Once you save your
+        writing session, the full keystroke audit is compressed, encrypted, and
+        stored. You get a link anyone can use to inspect it.
+    </p>
+    <p class="hint">
+        The proof doesn't guarantee human authorship, but it does guarantee that
+        someone made the effort to produce the written content of the proof.
     </p>
     <div class="about-link"><a href="/">Create a proof</a></div>
 
     <h3>The session</h3>
     <p class="hint">
-        Sessions are event-based. Each session records a timeline of events:
-        when it started, every key pressed, any pauses and resumes, and when it
-        finished. This makes the audit trail transparent and a verifier can see
-        not just what was typed, but the exact rhythm and flow of the writing.
+        Sessions are based on events. Each session records a timeline of events:
+        when it started, every key pressed, content pasted, any pauses and
+        resumes, and when it finished. This makes the audit trail transparent
+        and a verifier can see not just what was typed, but the exact rhythm and
+        flow of the writing, as well as the content length over time.
     </p>
 
     <h3>References</h3>
     <p class="hint">
         A reference scopes a proof to a specific purpose. An institution creates
-        a reference with a label -- for example,
-        <em>Software Engineer Cover Letter Ford Q2 2026</em> -- and shares the
+        a reference with a label - for example,
+        <em>Software Engineer Cover Letter Uber Q2 2026</em> - and shares the
         resulting link with writers. Any proof created through that link is
         permanently tied to that reference, which prevents the proof from being
         reused in a different context.
@@ -37,7 +42,7 @@
     <h3>Privacy and security</h3>
     <p class="hint">
         Keystroke data is encrypted with AES-256-GCM. The encryption key is
-        derived from the proof ID and a server secret -- neither is stored
-        alone. Proofs expire after 72 hours and are deleted automatically.
+        derived from the proof ID and a server secret - neither is stored alone.
+        Proofs expire after 72 hours and are deleted automatically.
     </p>
 </div>

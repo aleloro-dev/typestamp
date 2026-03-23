@@ -274,13 +274,14 @@ button:disabled {
 }
 
 /* proof.html */
-.proof-heading {
-    margin-bottom: 1rem;
+#audit-link,
+#interpret-link {
+    display: block;
+    margin-bottom: 1.5rem;
 }
 
 #audit-link {
-    display: block;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.4rem;
 }
 
 .proof-meta {

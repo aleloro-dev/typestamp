@@ -1,8 +1,8 @@
 <div class="container">
-    <h1>Prove you wrote it</h1>
+    <h1>Prove the effort behind your writing</h1>
     <p class="hint">
-        Typestamp captures every keystroke as you write, which serves as a proof
-        of human authorship.
+        Typestamp captures every keystroke as you write, producing a verifiable
+        record of the effort you put in.
     </p>
     <p class="hint">
         Once saved, your writing session is compressed, encrypted, and stored.
@@ -105,6 +105,12 @@
     let durationTimer = null;
     let sessionId = null;
     let saveDebounceTimer = null;
+    let totalPasted = 0;
+
+    function snapshot() {
+        const length = editor.value.length;
+        return { length, typed: Math.max(0, length - totalPasted) };
+    }
 
     function getElapsedMs() {
         if (state === "active") {
@@ -180,7 +186,11 @@
                     accumulatedMs = parsed.accumulatedMs || 0;
 
                     const now = Date.now();
-                    events.push({ type: "restore", timestamp: now });
+                    events.push({
+                        type: "restore",
+                        timestamp: now,
+                        ...snapshot(),
+                    });
                     intervalStart = now;
                     state = "active";
 
@@ -209,7 +219,7 @@
             accumulatedMs += now - intervalStart;
             intervalStart = null;
             state = "paused";
-            events.push({ type: "suspend", timestamp: now });
+            events.push({ type: "suspend", timestamp: now, ...snapshot() });
         }
         persistSession();
     });
@@ -218,7 +228,7 @@
         sessionId = crypto.randomUUID();
         state = "active";
         intervalStart = Date.now();
-        events.push({ type: "start", timestamp: intervalStart });
+        events.push({ type: "start", timestamp: intervalStart, ...snapshot() });
         durationTimer = setInterval(updateDuration, 1000);
         applyState();
         editor.focus();
@@ -230,13 +240,13 @@
         if (state === "active") {
             accumulatedMs += now - intervalStart;
             intervalStart = null;
-            events.push({ type: "pause", timestamp: now });
+            events.push({ type: "pause", timestamp: now, ...snapshot() });
             state = "paused";
             clearInterval(durationTimer);
             durationTimer = null;
         } else if (state === "paused") {
             intervalStart = now;
-            events.push({ type: "resume", timestamp: now });
+            events.push({ type: "resume", timestamp: now, ...snapshot() });
             state = "active";
             durationTimer = setInterval(updateDuration, 1000);
             editor.focus();
@@ -245,15 +255,37 @@
         persistSession();
     });
 
-    editor.addEventListener("paste", (e) => e.preventDefault());
-    editor.addEventListener("contextmenu", (e) => e.preventDefault());
+    editor.addEventListener("beforeinput", (e) => {
+        const pasteTypes = [
+            "insertFromPaste",
+            "insertFromPasteAsQuotation",
+            "insertFromDrop",
+        ];
+        if (pasteTypes.includes(e.inputType)) {
+            const pastedLength = e.data?.length ?? 0;
+            totalPasted += pastedLength;
+            events.push({
+                type: "paste",
+                timestamp: Date.now(),
+                pastedLength,
+                ...snapshot(),
+            });
+            updateStats();
+            scheduleSave();
+        }
+    });
 
     editor.addEventListener("keydown", (e) => {
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             document.execCommand("insertText", false, "\n\n");
         }
-        events.push({ type: "key", timestamp: Date.now(), key: e.key });
+        events.push({
+            type: "key",
+            timestamp: Date.now(),
+            key: e.key,
+            ...snapshot(),
+        });
         updateStats();
         scheduleSave();
     });
@@ -288,7 +320,7 @@
             clearInterval(durationTimer);
             durationTimer = null;
         }
-        events.push({ type: "finish", timestamp: now });
+        events.push({ type: "finish", timestamp: now, ...snapshot() });
         state = "paused";
         applyState();
 

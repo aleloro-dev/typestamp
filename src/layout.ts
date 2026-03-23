@@ -43,6 +43,8 @@ export async function layout(
             <div class="footer-links">
                 ${footerCta ? `<a href="/">Create a proof</a>` : ""}
                 ${footerRef ? `<a href="/ref">Create a reference</a>` : ""}
+                <a href="/use-cases">Use cases</a>
+                <a href="/proofs/interpret">How to interpret a proof</a>
             </div>
             <a class="contact-btn" href="mailto:hi@typestamp.com">Contact</a>
         </footer>

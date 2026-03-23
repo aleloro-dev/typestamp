@@ -11,6 +11,7 @@ import { gzip, gunzip } from "zlib";
 import { promisify } from "util";
 import sql from "./db";
 import { layout } from "./layout";
+import { extractAuditSignals, type ProofEvent } from "./audit";
 
 const gzipAsync = promisify(gzip);
 const gunzipAsync = promisify(gunzip);
@@ -76,7 +77,7 @@ const app = new Elysia()
   .get("/", async ({ set }) => {
     set.headers["content-type"] = "text/html; charset=utf-8";
     return layout(
-      "Create proofs of human authorship for written content - Typestamp",
+      "Prove the effort behind your writing - Typestamp",
       mainNav,
       await view("home"),
       false,
@@ -108,6 +109,14 @@ const app = new Elysia()
     set.headers["content-type"] = "text/html; charset=utf-8";
     return layout("How it works - Typestamp", [], await view("about"));
   })
+  .get("/use-cases", async ({ set }) => {
+    set.headers["content-type"] = "text/html; charset=utf-8";
+    return layout("Use cases - Typestamp", [], await view("use-cases"));
+  })
+  .get("/proofs/interpret", async ({ set }) => {
+    set.headers["content-type"] = "text/html; charset=utf-8";
+    return layout("How to interpret a proof - Typestamp", [], await view("interpret"));
+  })
   // API
   .use(
     new Elysia()
@@ -128,16 +137,19 @@ const app = new Elysia()
         },
       ),
   )
-  .use(rateLimit({ duration: 60000, max: 30, generator: getIP }))
-  .get("/api/refs/:id", async ({ params, set }) => {
-    const { id } = params;
-    const rows = await sql`SELECT id, label FROM refs WHERE id = ${id}`;
-    if (rows.length === 0) {
-      set.status = 404;
-      return { error: "Not found" };
-    }
-    return { id: rows[0].id, label: rows[0].label };
-  })
+  .use(
+    new Elysia()
+      .use(rateLimit({ duration: 60000, max: 300, generator: getIP }))
+      .get("/api/refs/:id", async ({ params, set }) => {
+        const { id } = params;
+        const rows = await sql`SELECT id, label FROM refs WHERE id = ${id}`;
+        if (rows.length === 0) {
+          set.status = 404;
+          return { error: "Not found" };
+        }
+        return { id: rows[0].id, label: rows[0].label };
+      }),
+  )
   .use(
     new Elysia()
       .use(rateLimit({ duration: 3600000, max: 3, generator: getIP }))
@@ -178,6 +190,8 @@ const app = new Elysia()
           }
           active_duration = Math.round(active_duration / 1000);
 
+          const auditSignals = extractAuditSignals(events);
+
           const payload = JSON.stringify({ content, events });
           const compressed = await gzipAsync(Buffer.from(payload, "utf8"));
 
@@ -198,7 +212,10 @@ const app = new Elysia()
               t.Object({
                 type: t.String(),
                 timestamp: t.Number(),
+                length: t.Number(),
+                typed: t.Number(),
                 key: t.Optional(t.String()),
+                pastedLength: t.Optional(t.Number()),
               }),
             ),
             ref_id: t.Optional(t.Union([t.String(), t.Null()])),
@@ -206,41 +223,45 @@ const app = new Elysia()
         },
       ),
   )
-  .get("/api/proofs/:id", async ({ params, set }) => {
-    const { id } = params;
+  .use(
+    new Elysia()
+      .use(rateLimit({ duration: 60000, max: 300, generator: getIP }))
+      .get("/api/proofs/:id", async ({ params, set }) => {
+        const { id } = params;
 
-    const rows = await sql`
-      SELECT id, iv, tag, data, ref_id, created_at, expires_at
-      FROM proofs
-      WHERE id = ${id}
-    `;
+        const rows = await sql`
+          SELECT id, iv, tag, data, ref_id, created_at, expires_at
+          FROM proofs
+          WHERE id = ${id}
+        `;
 
-    if (rows.length === 0) {
-      set.status = 404;
-      return { error: "Not found" };
-    }
+        if (rows.length === 0) {
+          set.status = 404;
+          return { error: "Not found" };
+        }
 
-    const proof = rows[0];
-    const now = Date.now();
+        const proof = rows[0];
+        const now = Date.now();
 
-    if (now > Number(proof.expires_at)) {
-      set.status = 410;
-      return { error: "Proof has expired" };
-    }
+        if (now > Number(proof.expires_at)) {
+          set.status = 410;
+          return { error: "Proof has expired" };
+        }
 
-    const key = deriveKey(id);
-    const decrypted = decrypt(proof.iv, proof.tag, proof.data, key);
-    const decompressed = await gunzipAsync(decrypted);
-    const { content, events } = JSON.parse(decompressed.toString("utf8"));
+        const key = deriveKey(id);
+        const decrypted = decrypt(proof.iv, proof.tag, proof.data, key);
+        const decompressed = await gunzipAsync(decrypted);
+        const { content, events } = JSON.parse(decompressed.toString("utf8"));
 
-    return {
-      content,
-      events,
-      ref_id: proof.ref_id ?? null,
-      created_at: Number(proof.created_at),
-      expires_at: Number(proof.expires_at),
-    };
-  })
+        return {
+          content,
+          events,
+          ref_id: proof.ref_id ?? null,
+          created_at: Number(proof.created_at),
+          expires_at: Number(proof.expires_at),
+        };
+      }),
+  )
   .listen(PORT);
 
 console.log(`Typestamp running at http://localhost:${PORT}`);

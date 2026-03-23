@@ -16,6 +16,8 @@
                     <th>#</th>
                     <th>Type</th>
                     <th>Key</th>
+                    <th>Length</th>
+                    <th>Typed chars</th>
                     <th>Timestamp</th>
                 </tr>
             </thead>
@@ -115,6 +117,8 @@
                         <td class="audit-td audit-td-index">${i + 1}</td>
                         <td class="audit-td">${e.type}</td>
                         <td class="audit-td">${keyCell}</td>
+                        <td class="audit-td audit-td-dim">${e.length ?? ""}</td>
+                        <td class="audit-td audit-td-dim">${e.typed ?? ""}</td>
                         <td class="audit-td-last audit-td-dim">${ts}</td>
                     `;
                     tbody.appendChild(tr);

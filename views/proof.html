@@ -7,9 +7,17 @@
     </div>
 
     <div id="proof-view" class="hidden">
-        <h1 class="proof-heading">Proof of human authorship</h1>
+        <h1>Proof of effort</h1>
+        <p class="hint">
+            Someone wrote this character by character, or they invested
+            significant resources in gaming the system. Either way, this proves
+            they took it seriously.
+        </p>
         <ul id="meta" class="proof-meta"></ul>
         <a id="audit-link" href="#">View keystroke audit →</a>
+        <a id="interpret-link" href="/proofs/interpret"
+            >How to interpret this proof →</a
+        >
         <h3>Content</h3>
         <div class="content-box" id="content"></div>
     </div>
@@ -143,16 +151,24 @@
                     .reverse()
                     .find((e) => e.type === "finish");
 
+                const lastSnapshot = [...events].reverse().find((e) => e.length != null);
+
                 const renderProof = (refLabel) => {
                     if (refLabel) addMeta("Reference", refLabel);
-                    addMeta("ID", id);
-                    addMeta("Keystrokes", keyEvents.length.toLocaleString());
+                    addMeta(
+                        "Keystroke count",
+                        keyEvents.length.toLocaleString(),
+                    );
+                    if (lastSnapshot?.length != null)
+                        addMeta("Total characters", lastSnapshot.length.toLocaleString());
+                    if (lastSnapshot?.typed != null)
+                        addMeta("Typed characters", lastSnapshot.typed.toLocaleString());
                     addMeta(
                         "Active duration",
                         formatDuration(calcActiveDuration(events)),
                     );
                     addMeta(
-                        "Started",
+                        "Started at",
                         fmt(
                             startEvent
                                 ? startEvent.timestamp
@@ -160,14 +176,14 @@
                         ),
                     );
                     addMeta(
-                        "Ended",
+                        "Ended at",
                         fmt(
                             finishEvent
                                 ? finishEvent.timestamp
                                 : events[events.length - 1].timestamp,
                         ),
                     );
-                    addMeta("Expires", fmt(data.expires_at));
+                    addMeta("Expires at", fmt(data.expires_at));
                     document.getElementById("content").textContent =
                         data.content;
                     proofView.classList.remove("hidden");
