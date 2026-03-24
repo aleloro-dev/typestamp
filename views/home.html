@@ -344,9 +344,9 @@
                 throw new Error(err.error || `Server error (${res.status})`);
             }
 
-            const { id, expires_at } = await res.json();
+            const { slug, expires_at } = await res.json();
             clearPersistedSession();
-            shareLinkEl.value = `${location.origin}/proofs/${id}`;
+            shareLinkEl.value = `${location.origin}/proofs/${slug}`;
             expiryNote.textContent = `Expires ${new Date(expires_at).toLocaleString()}`;
             resultEl.classList.remove("hidden");
             shareLinkEl.select();

@@ -1,6 +1,7 @@
 import { Elysia, t } from "elysia";
 import { rateLimit } from "elysia-rate-limit";
 import { nanoid } from "nanoid";
+import { uniqueNamesGenerator, adjectives, animals } from "unique-names-generator";
 import {
   createHmac,
   createCipheriv,
@@ -71,6 +72,16 @@ function getIP(
 }
 
 
+function generateSlug(): string {
+  const name = uniqueNamesGenerator({
+    dictionaries: [adjectives, animals],
+    separator: "-",
+    style: "lowerCase",
+  });
+  const number = Math.floor(Math.random() * 10000).toString().padStart(4, "0");
+  return `${name}-${number}`;
+}
+
 const mainNav = [{ href: "/about", text: "How it works" }];
 
 const app = new Elysia()
@@ -121,7 +132,7 @@ const app = new Elysia()
   // API
   .use(
     new Elysia()
-      .use(rateLimit({ duration: 3600000, max: 2, generator: getIP }))
+      .use(rateLimit({ duration: 3600000, max: 2, generator: getIP, scoping: 'scoped' }))
       .post(
         "/api/refs",
         async ({ body }) => {
@@ -138,18 +149,22 @@ const app = new Elysia()
         },
       ),
   )
-  .get("/api/refs/:id", async ({ params, set }) => {
-    const { id } = params;
-    const rows = await sql`SELECT id, label FROM refs WHERE id = ${id}`;
-    if (rows.length === 0) {
-      set.status = 404;
-      return { error: "Not found" };
-    }
-    return { id: rows[0].id, label: rows[0].label };
-  })
   .use(
     new Elysia()
-      .use(rateLimit({ duration: 3600000, max: 3, generator: getIP }))
+      .use(rateLimit({ duration: 60000, max: 30, generator: getIP, scoping: 'scoped' }))
+      .get("/api/refs/:id", async ({ params, set }) => {
+        const { id } = params;
+        const rows = await sql`SELECT id, label FROM refs WHERE id = ${id}`;
+        if (rows.length === 0) {
+          set.status = 404;
+          return { error: "Not found" };
+        }
+        return { id: rows[0].id, label: rows[0].label };
+      }),
+  )
+  .use(
+    new Elysia()
+      .use(rateLimit({ duration: 3600000, max: 3, generator: getIP, scoping: 'scoped' }))
       .post(
         "/api/proofs",
         async ({ body, set }) => {
@@ -164,6 +179,7 @@ const app = new Elysia()
           }
 
           const id = nanoid(10);
+          const slug = generateSlug();
           const now = Date.now();
           const expires_at = now + 72 * 60 * 60 * 1000;
 
@@ -196,11 +212,11 @@ const app = new Elysia()
           const { iv, tag, data } = encrypt(compressed, key);
 
           await sql`
-            INSERT INTO proofs (id, iv, tag, data, ref_id, created_at, expires_at, event_count, keystroke_count, active_duration)
-            VALUES (${id}, ${iv}, ${tag}, ${data}, ${ref_id ?? null}, ${now}, ${expires_at}, ${event_count}, ${keystroke_count}, ${active_duration})
+            INSERT INTO proofs (id, slug, iv, tag, data, ref_id, created_at, expires_at, event_count, keystroke_count, active_duration)
+            VALUES (${id}, ${slug}, ${iv}, ${tag}, ${data}, ${ref_id ?? null}, ${now}, ${expires_at}, ${event_count}, ${keystroke_count}, ${active_duration})
           `;
 
-          return { id, expires_at };
+          return { id, slug, expires_at };
         },
         {
           body: t.Object({
@@ -222,13 +238,14 @@ const app = new Elysia()
   )
   .use(
     new Elysia()
+      .use(rateLimit({ duration: 60000, max: 30, generator: getIP, scoping: 'scoped' }))
       .get("/api/proofs/:id", async ({ params, set }) => {
         const { id } = params;
 
         const rows = await sql`
-          SELECT id, iv, tag, data, ref_id, created_at, expires_at
+          SELECT id, slug, iv, tag, data, ref_id, created_at, expires_at
           FROM proofs
-          WHERE id = ${id}
+          WHERE slug = ${id}
         `;
 
         if (rows.length === 0) {
