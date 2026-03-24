@@ -73,7 +73,9 @@
 </div>
 
 <script>const __TURNSTILE_ENABLED__ = __TURNSTILE_ENABLED__;</script>
-<script>
+<script type="module">
+    import { Tracker } from '/tracker.js';
+
     const editor = document.getElementById("editor");
     const saveBtn = document.getElementById("save-btn");
     const clearBtn = document.getElementById("clear-btn");
@@ -91,7 +93,6 @@
     const wordCountEl = document.getElementById("word-count");
     const durationEl = document.getElementById("duration");
 
-    const STORAGE_KEY = "typestamp:session";
     const refBanner = document.getElementById("ref-banner");
     const refLabelEl = document.getElementById("ref-label");
 
@@ -108,45 +109,28 @@
             });
     }
 
-    let events = [];
-    let state = "idle";
-    let accumulatedMs = 0;
-    let intervalStart = null;
     let durationTimer = null;
-    let sessionId = null;
-    let saveDebounceTimer = null;
-    let totalPasted = 0;
 
-    function snapshot() {
-        const length = editor.value.length;
-        return { length, typed: Math.max(0, length - totalPasted) };
-    }
-
-    function getElapsedMs() {
-        if (state === "active") {
-            return accumulatedMs + (Date.now() - intervalStart);
-        }
-        return accumulatedMs;
-    }
+    const tracker = new Tracker(editor, {
+        onChange: (stats) => {
+            charCountEl.textContent = `${stats.charCount} characters`;
+            const w = stats.wordCount;
+            wordCountEl.textContent = w === 1 ? "1 word" : `${w} words`;
+            saveBtn.disabled =
+                stats.state === "idle" ||
+                stats.charCount < 200 ||
+                stats.keystrokeCount === 0;
+        },
+    });
 
     function updateDuration() {
-        const secs = Math.floor(getElapsedMs() / 1000);
-        const m = Math.floor(secs / 60),
-            s = secs % 60;
+        const secs = Math.floor(tracker.getElapsedMs() / 1000);
+        const m = Math.floor(secs / 60), s = secs % 60;
         durationEl.textContent = m > 0 ? `${m}m ${s}s` : `${secs}s`;
     }
 
-    function updateStats() {
-        const kc = events.filter((e) => e.type === "key").length;
-        const len = editor.value.trim().length;
-        charCountEl.textContent = `${len} characters`;
-        const words = editor.value.trim().split(/\s+/).filter(Boolean).length;
-        wordCountEl.textContent = words === 1 ? "1 word" : `${words} words`;
-        saveBtn.disabled =
-            state === "idle" || editor.value.trim().length < 200 || kc === 0;
-    }
-
     function applyState() {
+        const state = tracker.getState();
         startBtn.classList.toggle("hidden", state !== "idle");
         pauseBtn.classList.toggle("hidden", state === "idle");
         pauseBtn.textContent = state === "active" ? "Pause" : "Resume";
@@ -157,133 +141,56 @@
             state === "idle"
                 ? "Start your session to unlock the textarea"
                 : "Start typing here…";
-        updateStats();
     }
 
-    function persistSession() {
-        if (!sessionId) return;
-        localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify({
-                id: sessionId,
-                events,
-                content: editor.value,
-                accumulatedMs: getElapsedMs(),
-            }),
-        );
+    function startDurationTimer() {
+        clearInterval(durationTimer);
+        durationTimer = setInterval(updateDuration, 1000);
+        updateDuration();
     }
 
-    function clearPersistedSession() {
-        localStorage.removeItem(STORAGE_KEY);
-        sessionId = null;
+    function stopDurationTimer() {
+        clearInterval(durationTimer);
+        durationTimer = null;
     }
 
-    function scheduleSave() {
-        clearTimeout(saveDebounceTimer);
-        saveDebounceTimer = setTimeout(persistSession, 2000);
+    // Restore banner
+    const saved = tracker.getSavedSession();
+    if (saved) {
+        restoreBanner.classList.remove("hidden");
+
+        restoreBtn.addEventListener("click", () => {
+            tracker.restore(saved);
+            restoreBanner.classList.add("hidden");
+            startDurationTimer();
+            applyState();
+            editor.focus();
+        });
+
+        discardBtn.addEventListener("click", () => {
+            tracker.clearSavedSession();
+            restoreBanner.classList.add("hidden");
+        });
     }
-
-    try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            if (parsed.events && parsed.events.length > 0) {
-                restoreBanner.classList.remove("hidden");
-
-                restoreBtn.addEventListener("click", () => {
-                    sessionId = parsed.id;
-                    events = parsed.events;
-                    editor.value = parsed.content || "";
-                    accumulatedMs = parsed.accumulatedMs || 0;
-
-                    const now = Date.now();
-                    events.push({
-                        type: "restore",
-                        timestamp: now,
-                        ...snapshot(),
-                    });
-                    intervalStart = now;
-                    state = "active";
-
-                    restoreBanner.classList.add("hidden");
-                    durationTimer = setInterval(updateDuration, 1000);
-                    applyState();
-                    updateDuration();
-                    editor.focus();
-                    persistSession();
-                });
-
-                discardBtn.addEventListener("click", () => {
-                    clearPersistedSession();
-                    restoreBanner.classList.add("hidden");
-                });
-            }
-        }
-    } catch (e) {
-        localStorage.removeItem(STORAGE_KEY);
-    }
-
-    window.addEventListener("beforeunload", () => {
-        if (!sessionId) return;
-        if (state === "active") {
-            const now = Date.now();
-            accumulatedMs += now - intervalStart;
-            intervalStart = null;
-            state = "paused";
-            events.push({ type: "suspend", timestamp: now, ...snapshot() });
-        }
-        persistSession();
-    });
 
     startBtn.addEventListener("click", () => {
-        sessionId = crypto.randomUUID();
-        state = "active";
-        intervalStart = Date.now();
-        events.push({ type: "start", timestamp: intervalStart, ...snapshot() });
-        durationTimer = setInterval(updateDuration, 1000);
+        tracker.start();
+        startDurationTimer();
         applyState();
         editor.focus();
-        persistSession();
     });
 
     pauseBtn.addEventListener("click", () => {
-        const now = Date.now();
+        const state = tracker.getState();
         if (state === "active") {
-            accumulatedMs += now - intervalStart;
-            intervalStart = null;
-            events.push({ type: "pause", timestamp: now, ...snapshot() });
-            state = "paused";
-            clearInterval(durationTimer);
-            durationTimer = null;
+            tracker.pause();
+            stopDurationTimer();
         } else if (state === "paused") {
-            intervalStart = now;
-            events.push({ type: "resume", timestamp: now, ...snapshot() });
-            state = "active";
-            durationTimer = setInterval(updateDuration, 1000);
+            tracker.resume();
+            startDurationTimer();
             editor.focus();
         }
         applyState();
-        persistSession();
-    });
-
-    editor.addEventListener("beforeinput", (e) => {
-        const pasteTypes = [
-            "insertFromPaste",
-            "insertFromPasteAsQuotation",
-            "insertFromDrop",
-        ];
-        if (pasteTypes.includes(e.inputType)) {
-            const pastedLength = e.data?.length ?? 0;
-            totalPasted += pastedLength;
-            events.push({
-                type: "paste",
-                timestamp: Date.now(),
-                pastedLength,
-                ...snapshot(),
-            });
-            updateStats();
-            scheduleSave();
-        }
     });
 
     editor.addEventListener("keydown", (e) => {
@@ -291,31 +198,23 @@
             e.preventDefault();
             document.execCommand("insertText", false, "\n\n");
         }
-        events.push({
-            type: "key",
-            timestamp: Date.now(),
-            key: e.key,
-            ...snapshot(),
-        });
-        updateStats();
-        scheduleSave();
     });
 
-    editor.addEventListener("input", updateStats);
+    editor.addEventListener("input", () => {
+        const stats = tracker.getStats();
+        charCountEl.textContent = `${stats.charCount} characters`;
+        const w = stats.wordCount;
+        wordCountEl.textContent = w === 1 ? "1 word" : `${w} words`;
+    });
 
     clearBtn.addEventListener("click", () => {
         if (
-            events.length > 0 &&
+            tracker.getStats().keystrokeCount > 0 &&
             !confirm("Discard this session? This cannot be undone.")
         )
             return;
-        clearPersistedSession();
-        events = [];
-        state = "idle";
-        accumulatedMs = 0;
-        intervalStart = null;
-        clearInterval(durationTimer);
-        durationTimer = null;
+        tracker.discard();
+        stopDurationTimer();
         editor.value = "";
         durationEl.textContent = "0s";
         resultEl.classList.add("hidden");
@@ -341,15 +240,8 @@
     }
 
     saveBtn.addEventListener("click", async () => {
-        const now = Date.now();
-        if (state === "active") {
-            accumulatedMs += now - intervalStart;
-            intervalStart = null;
-            clearInterval(durationTimer);
-            durationTimer = null;
-        }
-        events.push({ type: "finish", timestamp: now, ...snapshot() });
-        state = "paused";
+        const { events, content } = tracker.finish();
+        stopDurationTimer();
         applyState();
 
         saveBtn.disabled = true;
@@ -373,10 +265,11 @@
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    content: editor.value,
+                    content,
                     events,
                     ref_id: refId ?? null,
                     turnstile_token: turnstileToken,
+                    source_host: window.location.hostname,
                 }),
             });
 
@@ -390,7 +283,7 @@
             }
 
             const { slug, expires_at } = await res.json();
-            clearPersistedSession();
+            tracker.clearSavedSession();
             shareLinkEl.value = `${location.origin}/proofs/${slug}`;
             expiryNote.textContent = `Expires ${new Date(expires_at).toLocaleString()}`;
             resultEl.classList.remove("hidden");
