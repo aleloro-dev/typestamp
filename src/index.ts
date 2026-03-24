@@ -261,7 +261,7 @@ const app = new Elysia()
           return { error: "Proof has expired" };
         }
 
-        const key = deriveKey(id);
+        const key = deriveKey(proof.id);
         const decrypted = decrypt(proof.iv, proof.tag, proof.data, key);
         const decompressed = await gunzipAsync(decrypted);
         const { content, events } = JSON.parse(decompressed.toString("utf8"));
