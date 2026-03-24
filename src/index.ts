@@ -26,6 +26,23 @@ if (!PROOF_SECRET) {
   throw new Error("PROOF_SECRET environment variable is required");
 }
 
+const TURNSTILE_SITE_KEY = process.env.TURNSTILE_SITE_KEY;
+const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY;
+const turnstileEnabled = !!(TURNSTILE_SITE_KEY && TURNSTILE_SECRET_KEY);
+
+async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
+  const res = await fetch(
+    "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ secret: TURNSTILE_SECRET_KEY, response: token, remoteip: ip }),
+    },
+  );
+  const data = (await res.json()) as { success: boolean };
+  return data.success;
+}
+
 const PORT = parseInt(process.env.PORT || "3000", 10);
 
 function deriveKey(id: string): Buffer {
@@ -96,7 +113,9 @@ const app = new Elysia()
     return layout(
       "Prove the effort behind your writing - Typestamp",
       mainNav,
-      await view("home"),
+      (await view("home"))
+        .replace("__TURNSTILE_SITE_KEY__", TURNSTILE_SITE_KEY ?? "")
+        .replace("__TURNSTILE_ENABLED__", String(turnstileEnabled)),
       false,
     );
   })
@@ -200,8 +219,18 @@ const app = new Elysia()
       )
       .post(
         "/api/proofs",
-        async ({ body, set }) => {
-          const { content, events, ref_id } = body;
+        async ({ body, set, request }) => {
+          const { content, events, ref_id, turnstile_token } = body;
+
+          const ip =
+            request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "";
+          if (turnstileEnabled) {
+            const valid = await verifyTurnstile(turnstile_token!, ip);
+            if (!valid) {
+              set.status = 403;
+              return { error: "Verification failed" };
+            }
+          }
 
           const id = nanoid(10);
           const slug = generateSlug();
@@ -304,6 +333,7 @@ const app = new Elysia()
               }),
             ),
             ref_id: t.Optional(t.Union([t.String(), t.Null()])),
+            turnstile_token: t.Optional(t.String()),
           }),
         },
       ),

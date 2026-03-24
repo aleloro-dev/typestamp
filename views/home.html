@@ -44,6 +44,14 @@
             <button class="primary" id="save-btn" disabled>Save proof</button>
             <button id="clear-btn">Discard</button>
         </div>
+        <div id="cf-turnstile"
+             class="cf-turnstile"
+             data-sitekey="__TURNSTILE_SITE_KEY__"
+             data-execution="execute"
+             data-appearance="interaction-only"
+             data-callback="onTurnstileSuccess"
+             data-error-callback="onTurnstileError">
+        </div>
         <div class="stats">
             <span id="char-count">0 characters</span>
             <span id="word-count">0 words</span>
@@ -64,6 +72,7 @@
     <p id="error" class="error hidden"></p>
 </div>
 
+<script>const __TURNSTILE_ENABLED__ = __TURNSTILE_ENABLED__;</script>
 <script>
     const editor = document.getElementById("editor");
     const saveBtn = document.getElementById("save-btn");
@@ -314,6 +323,23 @@
         applyState();
     });
 
+    let resolveTurnstile = null;
+
+    window.onTurnstileSuccess = function(token) {
+        if (resolveTurnstile) { resolveTurnstile(token); resolveTurnstile = null; }
+    };
+    window.onTurnstileError = function() {
+        if (resolveTurnstile) { resolveTurnstile(null); resolveTurnstile = null; }
+    };
+
+    function requestTurnstileToken() {
+        if (!__TURNSTILE_ENABLED__) return Promise.resolve(null);
+        return new Promise((resolve) => {
+            resolveTurnstile = resolve;
+            turnstile.execute("#cf-turnstile");
+        });
+    }
+
     saveBtn.addEventListener("click", async () => {
         const now = Date.now();
         if (state === "active") {
@@ -331,6 +357,17 @@
         errorEl.classList.add("hidden");
         editor.classList.remove("error");
 
+        const turnstileToken = await requestTurnstileToken();
+        if (__TURNSTILE_ENABLED__) turnstile.reset("#cf-turnstile");
+
+        if (!turnstileToken) {
+            errorEl.textContent = "Verification failed. Please try again.";
+            errorEl.classList.remove("hidden");
+            saveBtn.disabled = false;
+            saveBtn.textContent = "Save proof";
+            return;
+        }
+
         try {
             const res = await fetch("/api/proofs", {
                 method: "POST",
@@ -339,6 +376,7 @@
                     content: editor.value,
                     events,
                     ref_id: refId ?? null,
+                    turnstile_token: turnstileToken,
                 }),
             });
 
@@ -378,3 +416,4 @@
 
     applyState();
 </script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
