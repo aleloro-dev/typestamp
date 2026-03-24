@@ -115,7 +115,7 @@ const app = new Elysia()
       mainNav,
       (await view("home"))
         .replace("__TURNSTILE_SITE_KEY__", TURNSTILE_SITE_KEY ?? "")
-        .replace("__TURNSTILE_ENABLED__", String(turnstileEnabled)),
+        .replace(/__TURNSTILE_ENABLED__/g, String(turnstileEnabled)),
       false,
     );
   })
