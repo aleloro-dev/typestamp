@@ -4,15 +4,13 @@
   "type": "module",
   "scripts": {
     "dev": "bun run --watch src/index.ts",
-    "start": "bun run src/migrate.ts && bun run src/index.ts",
-    "migrate": "bun run src/migrate.ts"
+    "start": "bun run src/index.ts"
   },
   "dependencies": {
     "@elysiajs/static": "latest",
     "elysia": "latest",
     "elysia-rate-limit": "^4.5.1",
     "nanoid": "latest",
-    "postgres": "latest",
     "unique-names-generator": "^4.7.1"
   },
   "devDependencies": {

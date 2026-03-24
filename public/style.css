@@ -221,6 +221,10 @@ button:disabled {
 .error {
     margin-top: 1rem;
     font-size: 0.9rem;
+    color: #e07070;
+}
+textarea.error {
+    border-color: #e07070;
 }
 
 /* proof.html */

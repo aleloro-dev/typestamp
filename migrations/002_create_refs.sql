@@ -1,8 +1,0 @@
-CREATE TABLE IF NOT EXISTS refs (
-  id         TEXT PRIMARY KEY,
-  label      TEXT NOT NULL,
-  created_at BIGINT NOT NULL
-);
-
-ALTER TABLE proofs DROP COLUMN IF EXISTS reference;
-ALTER TABLE proofs ADD COLUMN IF NOT EXISTS ref_id TEXT REFERENCES refs(id);

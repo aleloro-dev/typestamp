@@ -1,7 +1,11 @@
 import { Elysia, t } from "elysia";
 import { rateLimit } from "elysia-rate-limit";
 import { nanoid } from "nanoid";
-import { uniqueNamesGenerator, adjectives, animals } from "unique-names-generator";
+import {
+  uniqueNamesGenerator,
+  adjectives,
+  animals,
+} from "unique-names-generator";
 import {
   createHmac,
   createCipheriv,
@@ -10,7 +14,7 @@ import {
 } from "crypto";
 import { gzip, gunzip } from "zlib";
 import { promisify } from "util";
-import sql from "./db";
+import { serverPost, serverGet } from "./server";
 import { layout } from "./layout";
 import { extractAuditSignals, type ProofEvent } from "./audit";
 
@@ -71,14 +75,15 @@ function getIP(
   );
 }
 
-
 function generateSlug(): string {
   const name = uniqueNamesGenerator({
     dictionaries: [adjectives, animals],
     separator: "-",
     style: "lowerCase",
   });
-  const number = Math.floor(Math.random() * 10000).toString().padStart(4, "0");
+  const number = Math.floor(Math.random() * 10000)
+    .toString()
+    .padStart(4, "0");
   return `${name}-${number}`;
 }
 
@@ -127,19 +132,33 @@ const app = new Elysia()
   })
   .get("/proofs/interpret", async ({ set }) => {
     set.headers["content-type"] = "text/html; charset=utf-8";
-    return layout("How to interpret a proof - Typestamp", [], await view("interpret"));
+    return layout(
+      "How to interpret a proof - Typestamp",
+      [],
+      await view("interpret"),
+    );
   })
   // API
   .use(
     new Elysia()
-      .use(rateLimit({ duration: 3600000, max: 2, generator: getIP, scoping: 'scoped' }))
+      .use(
+        rateLimit({
+          duration: 3600000,
+          max: 2,
+          generator: getIP,
+          scoping: "scoped",
+        }),
+      )
       .post(
         "/api/refs",
         async ({ body }) => {
           const { label } = body;
           const id = nanoid(10);
           const now = Date.now();
-          await sql`INSERT INTO refs (id, label, created_at) VALUES (${id}, ${label}, ${now})`;
+          const res = await serverPost("/refs", { id, label, created_at: now });
+          if (res.status !== 201) {
+            throw new Error(`server error: ${res.status}`);
+          }
           return { id, label };
         },
         {
@@ -151,32 +170,38 @@ const app = new Elysia()
   )
   .use(
     new Elysia()
-      .use(rateLimit({ duration: 60000, max: 30, generator: getIP, scoping: 'scoped' }))
+      .use(
+        rateLimit({
+          duration: 60000,
+          max: 30,
+          generator: getIP,
+          scoping: "scoped",
+        }),
+      )
       .get("/api/refs/:id", async ({ params, set }) => {
         const { id } = params;
-        const rows = await sql`SELECT id, label FROM refs WHERE id = ${id}`;
-        if (rows.length === 0) {
+        const res = await serverGet(`/refs/${id}`);
+        if (res.status === 404) {
           set.status = 404;
           return { error: "Not found" };
         }
-        return { id: rows[0].id, label: rows[0].label };
+        return res.json();
       }),
   )
   .use(
     new Elysia()
-      .use(rateLimit({ duration: 3600000, max: 3, generator: getIP, scoping: 'scoped' }))
+      .use(
+        rateLimit({
+          duration: 3600000,
+          max: 3,
+          generator: getIP,
+          scoping: "scoped",
+        }),
+      )
       .post(
         "/api/proofs",
         async ({ body, set }) => {
           const { content, events, ref_id } = body;
-
-          if (ref_id) {
-            const refs = await sql`SELECT id FROM refs WHERE id = ${ref_id}`;
-            if (refs.length === 0) {
-              set.status = 400;
-              return { error: "Invalid ref_id" };
-            }
-          }
 
           const id = nanoid(10);
           const slug = generateSlug();
@@ -203,7 +228,30 @@ const app = new Elysia()
           }
           active_duration = Math.round(active_duration / 1000);
 
-          const auditSignals = extractAuditSignals(events);
+          const finishEvent = (
+            events as {
+              type: string;
+              timestamp: number;
+              length: number;
+              typed: number;
+            }[]
+          ).findLast((e) => e.type === "finish");
+          const char_count = finishEvent?.length ?? 0;
+          const typed_char_count = finishEvent?.typed ?? 0;
+          const ended_at = finishEvent?.timestamp ?? now;
+
+          const auditSignals = extractAuditSignals(events).map((s) => ({
+            id: nanoid(10),
+            proof_id: id,
+            type: s.type,
+            timestamp: s.timestamp,
+            char_count: s.length,
+            typed_char_count: s.typed,
+            ...(s.key !== undefined ? { key: s.key } : {}),
+            ...(s.pastedLength !== undefined
+              ? { pasted_length: s.pastedLength }
+              : {}),
+          }));
 
           const payload = JSON.stringify({ content, events });
           const compressed = await gzipAsync(Buffer.from(payload, "utf8"));
@@ -211,10 +259,34 @@ const app = new Elysia()
           const key = deriveKey(id);
           const { iv, tag, data } = encrypt(compressed, key);
 
-          await sql`
-            INSERT INTO proofs (id, slug, iv, tag, data, ref_id, created_at, expires_at, event_count, keystroke_count, active_duration)
-            VALUES (${id}, ${slug}, ${iv}, ${tag}, ${data}, ${ref_id ?? null}, ${now}, ${expires_at}, ${event_count}, ${keystroke_count}, ${active_duration})
-          `;
+          const res = await serverPost("/proofs", {
+            id,
+            slug,
+            iv,
+            tag,
+            data,
+            ref_id: ref_id ?? null,
+            created_at: now,
+            ended_at,
+            expires_at,
+            event_count,
+            keystroke_count,
+            active_duration,
+            char_count,
+            typed_char_count,
+            audit_signals: auditSignals,
+          });
+
+          if (res.status === 422) {
+            set.status = 422;
+            return {
+              error:
+                "The system rejected your submission. Reason: low human effort. Discard this session and start again.",
+            };
+          }
+          if (res.status !== 201) {
+            throw new Error(`server error: ${res.status}`);
+          }
 
           return { id, slug, expires_at };
         },
@@ -238,28 +310,37 @@ const app = new Elysia()
   )
   .use(
     new Elysia()
-      .use(rateLimit({ duration: 60000, max: 30, generator: getIP, scoping: 'scoped' }))
+      .use(
+        rateLimit({
+          duration: 60000,
+          max: 30,
+          generator: getIP,
+          scoping: "scoped",
+        }),
+      )
       .get("/api/proofs/:id", async ({ params, set }) => {
         const { id } = params;
 
-        const rows = await sql`
-          SELECT id, slug, iv, tag, data, ref_id, created_at, expires_at
-          FROM proofs
-          WHERE slug = ${id} OR id = ${id}
-        `;
+        const res = await serverGet(`/proofs/${id}`);
 
-        if (rows.length === 0) {
+        if (res.status === 404) {
           set.status = 404;
           return { error: "Not found" };
         }
-
-        const proof = rows[0];
-        const now = Date.now();
-
-        if (now > Number(proof.expires_at)) {
+        if (res.status === 410) {
           set.status = 410;
           return { error: "Proof has expired" };
         }
+
+        const proof = (await res.json()) as {
+          id: string;
+          iv: string;
+          tag: string;
+          data: string;
+          ref_id: string | null;
+          created_at: number;
+          expires_at: number;
+        };
 
         const key = deriveKey(proof.id);
         const decrypted = decrypt(proof.iv, proof.tag, proof.data, key);
@@ -270,8 +351,8 @@ const app = new Elysia()
           content,
           events,
           ref_id: proof.ref_id ?? null,
-          created_at: Number(proof.created_at),
-          expires_at: Number(proof.expires_at),
+          created_at: proof.created_at,
+          expires_at: proof.expires_at,
         };
       }),
   )

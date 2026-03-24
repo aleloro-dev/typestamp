@@ -12,6 +12,7 @@
         When you click on 'Start session' the tracking will begin. You can pause
         it and resume it if needed.
     </p>
+    <p class="hint">The content must have no less than 200 characters.</p>
 
     <div id="ref-banner" class="ref-banner hidden">
         <span id="ref-label"></span>
@@ -44,7 +45,7 @@
             <button id="clear-btn">Discard</button>
         </div>
         <div class="stats">
-            <span id="key-count">0 keystrokes</span>
+            <span id="char-count">0 characters</span>
             <span id="word-count">0 words</span>
             <span id="duration">0s</span>
         </div>
@@ -77,7 +78,7 @@
     const copyBtn = document.getElementById("copy-btn");
     const expiryNote = document.getElementById("expiry-note");
     const errorEl = document.getElementById("error");
-    const keyCountEl = document.getElementById("key-count");
+    const charCountEl = document.getElementById("char-count");
     const wordCountEl = document.getElementById("word-count");
     const durationEl = document.getElementById("duration");
 
@@ -128,11 +129,12 @@
 
     function updateStats() {
         const kc = events.filter((e) => e.type === "key").length;
-        keyCountEl.textContent = kc === 1 ? "1 keystroke" : `${kc} keystrokes`;
+        const len = editor.value.trim().length;
+        charCountEl.textContent = `${len} characters`;
         const words = editor.value.trim().split(/\s+/).filter(Boolean).length;
         wordCountEl.textContent = words === 1 ? "1 word" : `${words} words`;
         saveBtn.disabled =
-            state === "idle" || editor.value.trim().length === 0 || kc === 0;
+            state === "idle" || editor.value.trim().length < 200 || kc === 0;
     }
 
     function applyState() {
@@ -327,6 +329,7 @@
         saveBtn.disabled = true;
         saveBtn.textContent = "Saving…";
         errorEl.classList.add("hidden");
+        editor.classList.remove("error");
 
         try {
             const res = await fetch("/api/proofs", {
@@ -340,6 +343,10 @@
             });
 
             if (!res.ok) {
+                if (res.status === 429)
+                    throw new Error(
+                        "You've submitted too many proofs recently. Please wait a while before trying again.",
+                    );
                 const err = await res.json().catch(() => ({}));
                 throw new Error(err.error || `Server error (${res.status})`);
             }
@@ -353,6 +360,7 @@
         } catch (err) {
             errorEl.textContent = err.message || "Failed to save proof.";
             errorEl.classList.remove("hidden");
+            editor.classList.add("error");
             saveBtn.disabled = false;
         } finally {
             saveBtn.textContent = "Save proof";

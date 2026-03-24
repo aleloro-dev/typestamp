@@ -1,2 +1,0 @@
-ALTER TABLE proofs ADD COLUMN IF NOT EXISTS slug TEXT UNIQUE;
-CREATE UNIQUE INDEX IF NOT EXISTS proofs_slug_idx ON proofs (slug);
