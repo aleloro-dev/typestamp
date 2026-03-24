@@ -115,7 +115,7 @@ const app = new Elysia()
       mainNav,
       (await view("home"))
         .replace("__TURNSTILE_SITE_KEY__", TURNSTILE_SITE_KEY ?? "")
-        .replace("__TURNSTILE_ENABLED__", String(turnstileEnabled)),
+        .replace(/__TURNSTILE_ENABLED__/g, String(turnstileEnabled)),
       false,
     );
   })
@@ -217,10 +217,22 @@ const app = new Elysia()
           scoping: "scoped",
         }),
       )
+      .onBeforeHandle(({ set }) => {
+        set.headers["Access-Control-Allow-Origin"] = "*";
+        set.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS";
+        set.headers["Access-Control-Allow-Headers"] = "Content-Type";
+      })
+      .options("/api/proofs", ({ set }) => {
+        set.headers["Access-Control-Allow-Origin"] = "*";
+        set.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS";
+        set.headers["Access-Control-Allow-Headers"] = "Content-Type";
+        set.status = 204;
+        return "";
+      })
       .post(
         "/api/proofs",
         async ({ body, set, request }) => {
-          const { content, events, ref_id, turnstile_token } = body;
+          const { content, events, ref_id, turnstile_token, source_host } = body;
 
           const ip =
             request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "";
@@ -295,6 +307,7 @@ const app = new Elysia()
             tag,
             data,
             ref_id: ref_id ?? null,
+            source_host: source_host ?? null,
             created_at: now,
             ended_at,
             expires_at,
@@ -334,6 +347,7 @@ const app = new Elysia()
             ),
             ref_id: t.Optional(t.Union([t.String(), t.Null()])),
             turnstile_token: t.Optional(t.String()),
+            source_host: t.Optional(t.String()),
           }),
         },
       ),
@@ -368,6 +382,7 @@ const app = new Elysia()
           tag: string;
           data: string;
           ref_id: string | null;
+          source_host: string | null;
           created_at: number;
           expires_at: number;
         };
@@ -381,6 +396,7 @@ const app = new Elysia()
           content,
           events,
           ref_id: proof.ref_id ?? null,
+          source_host: proof.source_host ?? null,
           created_at: proof.created_at,
           expires_at: proof.expires_at,
         };

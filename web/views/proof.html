@@ -170,6 +170,7 @@
 
                 const renderProof = (refLabel) => {
                     if (refLabel) addMeta("Reference", refLabel);
+                    if (data.source_host) addMeta("Written on", data.source_host);
                     addMeta(
                         "Keystroke count",
                         keyEvents.length.toLocaleString(),

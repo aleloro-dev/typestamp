@@ -1,0 +1,13 @@
+{
+  "name": "typestamp-extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun build src/content.ts --outfile dist/content.js --format iife --define 'process.env.TYPESTAMP_API_URL=\"https://typestamp.com\"'",
+    "dev": "bun build src/content.ts --outfile dist/content.js --format iife --watch --define 'process.env.TYPESTAMP_API_URL=\"http://localhost:3000\"'"
+  },
+  "dependencies": {
+    "@typestamp/tracker": "workspace:*"
+  }
+}

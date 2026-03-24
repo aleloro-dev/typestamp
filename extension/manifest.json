@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Typestamp",
+  "version": "0.1.0",
+  "description": "Prove the effort behind your writing on any website.",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["dist/content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
