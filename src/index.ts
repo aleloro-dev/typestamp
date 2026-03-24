@@ -216,10 +216,10 @@ const app = new Elysia()
           let active_duration = 0;
           let lastStart: number | null = null;
           for (const e of events as { type: string; timestamp: number }[]) {
-            if (e.type === "start" || e.type === "resume")
+            if (e.type === "start" || e.type === "resume" || e.type === "restore")
               lastStart = e.timestamp;
             if (
-              (e.type === "pause" || e.type === "finish") &&
+              (e.type === "pause" || e.type === "suspend" || e.type === "finish") &&
               lastStart !== null
             ) {
               active_duration += e.timestamp - lastStart;
