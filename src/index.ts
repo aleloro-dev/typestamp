@@ -245,7 +245,7 @@ const app = new Elysia()
         const rows = await sql`
           SELECT id, slug, iv, tag, data, ref_id, created_at, expires_at
           FROM proofs
-          WHERE slug = ${id}
+          WHERE slug = ${id} OR id = ${id}
         `;
 
         if (rows.length === 0) {
