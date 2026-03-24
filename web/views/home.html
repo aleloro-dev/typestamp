@@ -72,7 +72,7 @@
     <p id="error" class="error hidden"></p>
 </div>
 
-<script>const __TURNSTILE_ENABLED__ = __TURNSTILE_ENABLED__;</script>
+<script>const TURNSTILE_ENABLED = TURNSTILE_ENABLED;</script>
 <script type="module">
     import { Tracker } from '/tracker.js';
 
@@ -232,7 +232,7 @@
     };
 
     function requestTurnstileToken() {
-        if (!__TURNSTILE_ENABLED__) return Promise.resolve(null);
+        if (!TURNSTILE_ENABLED) return Promise.resolve(null);
         return new Promise((resolve) => {
             resolveTurnstile = resolve;
             turnstile.execute("#cf-turnstile");
@@ -250,7 +250,7 @@
         editor.classList.remove("error");
 
         const turnstileToken = await requestTurnstileToken();
-        if (__TURNSTILE_ENABLED__) turnstile.reset("#cf-turnstile");
+        if (TURNSTILE_ENABLED) turnstile.reset("#cf-turnstile");
 
         if (!turnstileToken) {
             errorEl.textContent = "Verification failed. Please try again.";

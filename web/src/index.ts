@@ -115,7 +115,7 @@ const app = new Elysia()
       mainNav,
       (await view("home"))
         .replace("__TURNSTILE_SITE_KEY__", TURNSTILE_SITE_KEY ?? "")
-        .replace(/__TURNSTILE_ENABLED__/g, String(turnstileEnabled)),
+        .replace("__TURNSTILE_ENABLED__", String(turnstileEnabled)),
       false,
     );
   })
@@ -402,6 +402,10 @@ const app = new Elysia()
         };
       }),
   )
+  .get("/tracker.js", async ({ set }) => {
+    set.headers["content-type"] = "application/javascript; charset=utf-8";
+    return Bun.file("public/tracker.js").text();
+  })
   .listen(PORT);
 
 console.log(`Typestamp running at http://localhost:${PORT}`);
