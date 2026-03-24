@@ -46,11 +46,7 @@
         </div>
         <div id="cf-turnstile"
              class="cf-turnstile"
-             data-sitekey="__TURNSTILE_SITE_KEY__"
-             data-execution="execute"
-             data-appearance="interaction-only"
-             data-callback="onTurnstileSuccess"
-             data-error-callback="onTurnstileError">
+             data-sitekey="__TURNSTILE_SITE_KEY__">
         </div>
         <div class="stats">
             <span id="char-count">0 characters</span>
@@ -223,22 +219,29 @@
     });
 
     let resolveTurnstile = null;
+    let turnstileWidgetId = null;
 
-    window.onTurnstileSuccess = function(token) {
-        console.log("[turnstile] success", token?.slice(0, 20));
-        if (resolveTurnstile) { resolveTurnstile(token); resolveTurnstile = null; }
-    };
-    window.onTurnstileError = function() {
-        console.log("[turnstile] error");
-        if (resolveTurnstile) { resolveTurnstile(null); resolveTurnstile = null; }
+    window.initTurnstile = function() {
+        const container = document.getElementById("cf-turnstile");
+        turnstileWidgetId = turnstile.render(container, {
+            sitekey: container.dataset.sitekey,
+            execution: "execute",
+            appearance: "interaction-only",
+            callback: function(token) {
+                if (resolveTurnstile) { resolveTurnstile(token); resolveTurnstile = null; }
+            },
+            "error-callback": function(code) {
+                console.log("[turnstile] error", code);
+                if (resolveTurnstile) { resolveTurnstile(null); resolveTurnstile = null; }
+            },
+        });
     };
 
     function requestTurnstileToken() {
         if (!TURNSTILE_ENABLED) return Promise.resolve(null);
-        console.log("[turnstile] executing, onTurnstileSuccess defined:", typeof window.onTurnstileSuccess);
         return new Promise((resolve) => {
             resolveTurnstile = resolve;
-            turnstile.execute("#cf-turnstile");
+            turnstile.execute(turnstileWidgetId);
         });
     }
 
@@ -253,7 +256,7 @@
         editor.classList.remove("error");
 
         const turnstileToken = await requestTurnstileToken();
-        if (TURNSTILE_ENABLED) turnstile.reset("#cf-turnstile");
+        if (TURNSTILE_ENABLED) turnstile.reset(turnstileWidgetId);
 
         if (!turnstileToken) {
             errorEl.textContent = "Verification failed. Please try again.";
@@ -312,4 +315,4 @@
 
     applyState();
 </script>
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=initTurnstile" async defer></script>
