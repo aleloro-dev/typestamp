@@ -225,14 +225,17 @@
     let resolveTurnstile = null;
 
     window.onTurnstileSuccess = function(token) {
+        console.log("[turnstile] success", token?.slice(0, 20));
         if (resolveTurnstile) { resolveTurnstile(token); resolveTurnstile = null; }
     };
     window.onTurnstileError = function() {
+        console.log("[turnstile] error");
         if (resolveTurnstile) { resolveTurnstile(null); resolveTurnstile = null; }
     };
 
     function requestTurnstileToken() {
         if (!TURNSTILE_ENABLED) return Promise.resolve(null);
+        console.log("[turnstile] executing, onTurnstileSuccess defined:", typeof window.onTurnstileSuccess);
         return new Promise((resolve) => {
             resolveTurnstile = resolve;
             turnstile.execute("#cf-turnstile");
