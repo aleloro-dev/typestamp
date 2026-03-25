@@ -4,45 +4,50 @@
         Typestamp creates verifiable proofs of effort by recording every
         keystroke made during a writing session with precise timestamps.
     </p>
-
-    <h3>The proof</h3>
     <p class="hint">
-        When you write on Typestamp, every key press is captured with a precise
-        timestamp. The proof tracks the content length and typed characters with
-        every event, so copypasting can be easily flagged. Once you save your
-        writing session, the full keystroke audit is compressed, encrypted, and
-        stored. You get a link anyone can use to inspect it.
+        We call these proofs of writing effort 'typestamps'.
+    </p>
+
+    <h3>Typestamps</h3>
+    <p class="hint">
+     A typestamp tracks every key typed in a writing session with a precise timestamp. Once you save your
+        session, it is validated. If accepted, the full keystroke audit is compressed, encrypted, and
+        stored. You get a link so anyone can inspect the typestamp of your session.
     </p>
     <p class="hint">
-        The proof doesn't guarantee human authorship, but it does guarantee that
+        A typestamp doesn't guarantee human authorship, but it does guarantee that
         someone made the effort to produce the written content of the proof.
     </p>
-    <div class="about-link"><a href="/">Create a proof</a></div>
+    <div class="about-link"><a href="/">Create a typestamp</a></div>
 
     <h3>The session</h3>
     <p class="hint">
+        A session is the process of producing a typestamp.
         Sessions are based on events. Each session records a timeline of events:
         when it started, every key pressed, content pasted, any pauses and
         resumes, and when it finished. This makes the audit trail transparent
         and a verifier can see not just what was typed, but the exact rhythm and
         flow of the writing, as well as the content length over time.
     </p>
+    <p class="hint">
+        Sessions can be rejected if the system detects low human effort. The system is work in progress and may be too strict, so we accept feedback.
+    </p>
 
     <h3>References</h3>
     <p class="hint">
-        A reference scopes a proof to a specific purpose. An institution creates
+        A reference scopes a typestamp to a specific purpose. An institution creates
         a reference with a label - for example,
         <em>Software Engineer Cover Letter Uber Q2 2026</em> - and shares the
-        resulting link with writers. Any proof created through that link is
-        permanently tied to that reference, which prevents the proof from being
+        resulting link with writers. Any typestamp created through that link is
+        permanently tied to that reference, which prevents the typestamp from being
         reused in a different context.
     </p>
     <div class="about-link"><a href="/ref">Create a reference</a></div>
 
     <h3>Privacy and security</h3>
     <p class="hint">
-        Keystroke data is encrypted with AES-256-GCM. The encryption key is
-        derived from the proof ID and a server secret - neither is stored alone.
-        Proofs expire after 72 hours and are deleted automatically.
+        Data in typestamps is encrypted with AES-256-GCM. The encryption key is
+        derived from the typestamp ID and a server secret - neither is stored alone.
+        Typestamps expire after 72 hours and are deleted automatically.
     </p>
 </div>

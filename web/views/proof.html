@@ -1,5 +1,5 @@
 <div class="container">
-    <p id="loading">Loading proof…</p>
+    <p id="loading">Loading typestamp…</p>
 
     <div id="error-view" class="hidden">
         <h2 id="error-title">Error</h2>
@@ -7,7 +7,7 @@
     </div>
 
     <div id="proof-view" class="hidden">
-        <h1>Proof of effort</h1>
+        <h1>Typestamp</h1>
         <p class="hint">
             Someone wrote this character by character, or they invested
             significant resources in gaming the system. Either way, this proves
@@ -15,8 +15,8 @@
         </p>
         <ul id="meta" class="proof-meta"></ul>
         <a id="audit-link" href="#">View keystroke audit →</a>
-        <a id="interpret-link" href="/proofs/interpret"
-            >How to interpret this proof →</a
+        <a id="interpret-link" href="/interpret"
+            >How to interpret a typestamp →</
         >
         <h3>Content</h3>
         <div class="content-box" id="content"></div>
@@ -24,8 +24,8 @@
 </div>
 
 <script>
-    const id = location.pathname.split("/")[2];
-    document.getElementById("audit-link").href = `/proofs/${id}/keystrokes`;
+    const id = location.pathname.split("/")[1];
+    document.getElementById("audit-link").href = `/${id}/keystrokes`;
     const loadingEl = document.getElementById("loading");
     const errorView = document.getElementById("error-view");
     const proofView = document.getElementById("proof-view");
@@ -113,13 +113,13 @@
             .then(async (res) => {
                 if (res.status === 404)
                     throw {
-                        title: "Proof not found",
-                        msg: "This proof does not exist.",
+                        title: "Typestamp not found",
+                        msg: "This typestamp does not exist.",
                     };
                 if (res.status === 410)
                     throw {
-                        title: "Proof expired",
-                        msg: "Proofs are kept for 72 hours after creation.",
+                        title: "Typestamp expired",
+                        msg: "Typestamps are kept for 72 hours after creation.",
                     };
                 if (!res.ok)
                     throw {
@@ -135,7 +135,7 @@
     }
 
     if (!id) {
-        showError("Missing proof ID", "No proof ID was provided in the URL.");
+        showError("Missing typestamp ID", "No typestamp ID was provided in the URL.");
     } else {
         Promise.resolve(readCache() ?? fetchProof())
             .then((data) => {

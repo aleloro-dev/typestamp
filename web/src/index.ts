@@ -119,18 +119,6 @@ const app = new Elysia()
       false,
     );
   })
-  .get("/proofs/:id", async ({ set }) => {
-    set.headers["content-type"] = "text/html; charset=utf-8";
-    return layout("Proofs - Typestamp", mainNav, await view("proof"));
-  })
-  .get("/proofs/:id/keystrokes", async ({ set }) => {
-    set.headers["content-type"] = "text/html; charset=utf-8";
-    return layout(
-      "Keystroke audit - Typestamp",
-      mainNav,
-      await view("keystrokes"),
-    );
-  })
   .get("/ref", async ({ set }) => {
     set.headers["content-type"] = "text/html; charset=utf-8";
     return layout(
@@ -149,13 +137,30 @@ const app = new Elysia()
     set.headers["content-type"] = "text/html; charset=utf-8";
     return layout("Use cases - Typestamp", [], await view("use-cases"));
   })
-  .get("/proofs/interpret", async ({ set }) => {
+  .get("/interpret", async ({ set }) => {
     set.headers["content-type"] = "text/html; charset=utf-8";
     return layout(
-      "How to interpret a proof - Typestamp",
+      "How to interpret a typestamp - Typestamp",
       [],
       await view("interpret"),
     );
+  })
+  // Redirect old /proofs/:id URLs to /:id
+  .get("/proofs/:id", ({ params, set }) => {
+    set.redirect = `/${params.id}`;
+    set.status = 301;
+  })
+  .get("/proofs/:id/keystrokes", ({ params, set }) => {
+    set.redirect = `/${params.id}/keystrokes`;
+    set.status = 301;
+  })
+  .get("/:slug", async ({ set }) => {
+    set.headers["content-type"] = "text/html; charset=utf-8";
+    return layout("Typestamp", mainNav, await view("proof"));
+  })
+  .get("/:slug/keystrokes", async ({ set }) => {
+    set.headers["content-type"] = "text/html; charset=utf-8";
+    return layout("Keystroke audit - Typestamp", mainNav, await view("keystrokes"));
   })
   // API
   .use(

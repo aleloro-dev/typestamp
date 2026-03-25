@@ -1,12 +1,13 @@
 <div class="container">
     <h1>Prove the effort behind your writing</h1>
     <p class="hint">
-        Typestamp captures every keystroke as you write, producing a verifiable
-        record of the effort you put in.
+        Typestamp allows you to produce proofs of writing effort. We call these 'typestamps'.
     </p>
     <p class="hint">
-        Once saved, your writing session is compressed, encrypted, and stored.
-        You can share it with a secret link.
+        To produce a typestamp, you have to start a writing session where all your keystrokes are tracked with precise timestamps.
+    </p>
+    <p class="hint">
+        Once saved, your typestamp is encrypted, stored, and ready to share with a link.
     </p>
     <p class="hint">
         When you click on 'Start session' the tracking will begin. You can pause
@@ -41,7 +42,7 @@
 
     <div class="editor-bottom">
         <div class="actions">
-            <button class="primary" id="save-btn" disabled>Save proof</button>
+            <button class="primary" id="save-btn" disabled>Save typestamp</button>
             <button id="clear-btn">Discard</button>
         </div>
         <div id="cf-turnstile"
@@ -56,7 +57,7 @@
     </div>
 
     <div id="result" class="result hidden">
-        <h2>Proof saved</h2>
+        <h2>Typestamp saved</h2>
         <label>Share link</label>
         <div class="share-row">
             <input class="share-input" id="share-link" type="text" readonly />
@@ -262,7 +263,7 @@
             errorEl.textContent = "Verification failed. Please try again.";
             errorEl.classList.remove("hidden");
             saveBtn.disabled = false;
-            saveBtn.textContent = "Save proof";
+            saveBtn.textContent = "Save typestamp";
             return;
         }
 
@@ -282,7 +283,7 @@
             if (!res.ok) {
                 if (res.status === 429)
                     throw new Error(
-                        "You've submitted too many proofs recently. Please wait a while before trying again.",
+                        "You've submitted too many typestamps recently. Please wait a while before trying again.",
                     );
                 const err = await res.json().catch(() => ({}));
                 throw new Error(err.error || `Server error (${res.status})`);
@@ -290,17 +291,17 @@
 
             const { slug, expires_at } = await res.json();
             tracker.clearSavedSession();
-            shareLinkEl.value = `${location.origin}/proofs/${slug}`;
+            shareLinkEl.value = `${location.origin}/${slug}`;
             expiryNote.textContent = `Expires ${new Date(expires_at).toLocaleString()}`;
             resultEl.classList.remove("hidden");
             shareLinkEl.select();
         } catch (err) {
-            errorEl.textContent = err.message || "Failed to save proof.";
+            errorEl.textContent = err.message || "Failed to save typestamp.";
             errorEl.classList.remove("hidden");
             editor.classList.add("error");
             saveBtn.disabled = false;
         } finally {
-            saveBtn.textContent = "Save proof";
+            saveBtn.textContent = "Save typestamp";
         }
     });
 

@@ -217,7 +217,7 @@ export function createWidget(
 
   const saveBtn = document.createElement("button");
   saveBtn.className = "btn-primary";
-  saveBtn.textContent = "Save proof";
+  saveBtn.textContent = "Save typestamp";
 
   const discardBtn = document.createElement("button");
   discardBtn.className = "btn-secondary";
@@ -231,7 +231,7 @@ export function createWidget(
   proofLink.className = "proof-link";
   proofLink.target = "_blank";
   proofLink.rel = "noopener noreferrer";
-  proofLink.textContent = "View proof →";
+  proofLink.textContent = "View typestamp →";
 
   widgetEl.appendChild(brandEl);
   widgetEl.appendChild(row1);
@@ -273,11 +273,11 @@ export function createWidget(
       }
       const { slug } = await res.json();
       tracker.clearSavedSession();
-      proofUrl = `${apiUrl}/proofs/${slug}`;
+      proofUrl = `${apiUrl}/${slug}`;
       updateWidget();
     } catch (err: unknown) {
       saveBtn.disabled = false;
-      saveBtn.textContent = "Save proof";
+      saveBtn.textContent = "Save typestamp";
       charsEl.textContent = err instanceof Error ? err.message : "Failed to save";
       charsEl.style.color = "red";
     }
@@ -303,7 +303,7 @@ export function createWidget(
     if (proofUrl) {
       dot.className = "dot";
       charsEl.style.color = "";
-      charsEl.textContent = "Proof saved";
+      charsEl.textContent = "Typestamp saved";
       durationEl.textContent = "";
       actionsEl.innerHTML = "";
       proofLink.href = proofUrl;

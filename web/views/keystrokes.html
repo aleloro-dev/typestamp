@@ -7,7 +7,7 @@
     </div>
 
     <div id="keystroke-view" class="hidden">
-        <a id="back-link" href="#">← Back to proof</a>
+        <a id="back-link" href="#">← Back to typestamp</a>
         <h1 class="audit-heading">Keystroke audit</h1>
         <p id="summary" class="audit-summary"></p>
         <table id="table" class="audit-table">
@@ -27,8 +27,8 @@
 </div>
 
 <script>
-    const id = location.pathname.split("/")[2];
-    document.getElementById("back-link").href = `/proofs/${id}`;
+    const id = location.pathname.split("/")[1];
+    document.getElementById("back-link").href = `/${id}`;
     const loadingEl = document.getElementById("loading");
     const errorView = document.getElementById("error-view");
     const keystrokeView = document.getElementById("keystroke-view");
@@ -62,13 +62,13 @@
         return fetch(`/api/proofs/${id}`).then(async (res) => {
             if (res.status === 404)
                 throw {
-                    title: "Proof not found",
-                    msg: "This proof does not exist.",
+                    title: "Typestamp not found",
+                    msg: "This typestamp does not exist.",
                 };
             if (res.status === 410)
                 throw {
-                    title: "Proof expired",
-                    msg: "Proofs are kept for 72 hours after creation.",
+                    title: "Typestamp expired",
+                    msg: "Typestamps are kept for 72 hours after creation.",
                 };
             if (!res.ok)
                 throw { title: "Error", msg: `Server error (${res.status}).` };
@@ -77,7 +77,7 @@
     }
 
     if (!id) {
-        showError("Missing proof ID", "No proof ID was provided in the URL.");
+        showError("Missing typestamp ID", "No typestamp ID was provided in the URL.");
     } else {
         Promise.resolve(readCache() ?? fetchProof())
             .then((data) => {

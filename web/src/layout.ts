@@ -41,10 +41,10 @@ export async function layout(
         ${body}
         <footer class="site-footer">
             <div class="footer-links">
-                ${footerCta ? `<a href="/">Create a proof</a>` : ""}
+                ${footerCta ? `<a href="/">Create a typestamp</a>` : ""}
                 ${footerRef ? `<a href="/ref">Create a reference</a>` : ""}
                 <a href="/use-cases">Use cases</a>
-                <a href="/proofs/interpret">How to interpret a proof</a>
+                <a href="/interpret">How to interpret a typestamp</a>
             </div>
             <a class="contact-btn" href="mailto:hi@typestamp.com">Contact</a>
         </footer>
