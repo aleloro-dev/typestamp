@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Typestamp</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 280px;
+      font-family: "Inter", sans-serif;
+      font-size: 13px;
+      color: #111;
+      background: #fff;
+    }
+
+    #root { padding: 16px; }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .brand { font-weight: 600; font-size: 13px; }
+
+    .element-label {
+      font-size: 11px;
+      color: #888;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 160px;
+    }
+
+    .stats {
+      background: #f8f8f8;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .stats-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ccc;
+      flex-shrink: 0;
+    }
+    .dot.recording { background: #ef4444; }
+    .dot.saveable { background: #22c55e; }
+    .dot.paused { background: #f59e0b; }
+    .dot.suspended { background: #9ca3af; }
+
+    .stat-chars { font-weight: 500; color: #333; }
+    .stat-duration { color: #888; font-size: 12px; }
+
+    .actions { display: flex; flex-direction: column; gap: 8px; }
+
+    .actions-row { display: flex; gap: 8px; }
+
+    button {
+      border: none;
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+      flex: 1;
+    }
+
+    .btn-primary { background: #222; color: #fff; }
+    .btn-primary:hover { background: #444; }
+    .btn-primary:disabled { background: #999; cursor: default; }
+    .btn-secondary { background: #f0f0f0; color: #333; }
+    .btn-secondary:hover { background: #e0e0e0; }
+
+    .message { color: #555; line-height: 1.4; }
+    .hint { color: #aaa; font-size: 12px; margin-top: 4px; }
+
+    .proof-box {
+      background: #f8f8f8;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .proof-label { font-size: 11px; color: #888; margin-bottom: 4px; }
+
+    .proof-link {
+      color: #111;
+      font-size: 13px;
+      font-weight: 500;
+      text-decoration: none;
+      border-bottom: 1px solid #ccc;
+      word-break: break-all;
+    }
+    .proof-link:hover { border-color: #111; }
+
+    .btn-danger { background: #fee2e2; color: #c00; }
+    .btn-danger:hover { background: #fecaca; }
+
+    .confirm {
+      background: #fff8f8;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .confirm-msg { font-size: 12px; color: #555; }
+
+    .error { color: #c00; font-size: 12px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="dist/popup.js"></script>
+</body>
+</html>

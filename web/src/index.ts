@@ -212,12 +212,19 @@ const app = new Elysia()
         return res.json();
       }),
   )
+  .options("/api/proofs", ({ set }) => {
+    set.headers["Access-Control-Allow-Origin"] = "*";
+    set.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS";
+    set.headers["Access-Control-Allow-Headers"] = "Content-Type";
+    set.status = 204;
+    return "";
+  })
   .use(
     new Elysia()
       .use(
         rateLimit({
           duration: 3600000,
-          max: 3,
+          max: 10,
           generator: getIP,
           scoping: "scoped",
         }),
@@ -226,13 +233,6 @@ const app = new Elysia()
         set.headers["Access-Control-Allow-Origin"] = "*";
         set.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS";
         set.headers["Access-Control-Allow-Headers"] = "Content-Type";
-      })
-      .options("/api/proofs", ({ set }) => {
-        set.headers["Access-Control-Allow-Origin"] = "*";
-        set.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS";
-        set.headers["Access-Control-Allow-Headers"] = "Content-Type";
-        set.status = 204;
-        return "";
       })
       .post(
         "/api/proofs",

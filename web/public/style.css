@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
 *,
 *::before,
 *::after {
@@ -7,9 +9,9 @@
 }
 
 body {
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #222;
-    color: beige;
+    font-family: "Inter", sans-serif;
+    background-color: #fff;
+    color: #222;
     font-size: 16px;
     line-height: 1.6;
     min-height: 100vh;
@@ -20,7 +22,7 @@ body {
 }
 
 a {
-    color: beige;
+    color: #222;
     font-size: 0.9rem;
     opacity: 0.7;
 }
@@ -42,7 +44,8 @@ a {
 
 .logo a {
     text-decoration: none;
-    font-size: 1rem;
+    font-size: 1.1rem;
+    font-weight: 500;
     opacity: 1;
 }
 
@@ -66,8 +69,8 @@ a {
     padding: 0.5rem 1rem;
     border-radius: 6px;
     text-decoration: none;
-    color: #222;
-    background: beige;
+    color: #fff;
+    background: #222;
 }
 
 /* index.html (writing page) */
@@ -85,11 +88,11 @@ textarea {
     width: 100%;
     min-height: 320px;
     font-size: 0.9rem;
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-family: "Inter", sans-serif;
     line-height: 1.5;
     padding: 1rem;
     border-radius: 8px;
-    border: 1px solid #444;
+    border: 1px solid #ddd;
     resize: vertical;
     background: inherit;
     color: inherit;
@@ -101,7 +104,7 @@ textarea {
 }
 
 .ref-banner {
-    border-left: 3px solid #555;
+    border-left: 3px solid #ddd;
     padding: 0.25rem 0.75rem;
     margin-bottom: 1rem;
     font-size: 0.85rem;
@@ -112,7 +115,7 @@ textarea {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border: 1px solid #555;
+    border: 1px solid #ddd;
     border-radius: 8px;
     padding: 0.6rem 1rem;
     margin-bottom: 1rem;
@@ -165,8 +168,8 @@ button {
 }
 
 .primary {
-    background: beige;
-    color: #222;
+    background: #222;
+    color: #fff;
 }
 
 button:disabled {
@@ -176,7 +179,7 @@ button:disabled {
 
 .result {
     margin-top: 1.5rem;
-    border: 1px solid #444;
+    border: 1px solid #ddd;
     border-radius: 8px;
     padding: 1rem;
 }
@@ -208,8 +211,8 @@ button:disabled {
 .copy-btn {
     font-size: 0.85rem;
     padding: 0.5rem 1rem;
-    background: beige;
-    color: #222;
+    background: #222;
+    color: #fff;
     flex-shrink: 0;
 }
 
@@ -235,8 +238,7 @@ textarea.error {
     margin-bottom: 0.5rem;
 }
 .content-box {
-    border: 1px solid #444;
-    background: #333;
+    background: #fafafa;
     border-radius: 8px;
     padding: 1rem;
     font-size: 1rem;
@@ -254,7 +256,7 @@ textarea.error {
     gap: 1.5rem;
     margin-top: 2rem;
     padding-top: 1rem;
-    border-top: 1px solid #444;
+    border-top: 1px solid #ddd;
 }
 
 .footer-links {
@@ -290,7 +292,6 @@ textarea.error {
 
 .proof-meta {
     list-style: none;
-    padding: 0;
     margin-bottom: 1.5rem;
     display: grid;
     grid-template-columns: max-content 1fr;
@@ -300,10 +301,12 @@ textarea.error {
 .proof-meta .meta-label {
     opacity: 0.5;
     white-space: nowrap;
+    font-size: 0.85rem;
 }
 
 .proof-meta .meta-value {
     word-break: break-word;
+    font-size: 0.85rem;
 }
 
 /* keystrokes.html */
@@ -323,6 +326,7 @@ textarea.error {
     border-collapse: collapse;
     font-size: 0.875rem;
     font-family: monospace;
+    color: #222;
 }
 
 .audit-head {

@@ -4,10 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "bun build src/content.ts --outfile dist/content.js --format iife --define 'process.env.TYPESTAMP_API_URL=\"https://typestamp.com\"'",
-    "dev": "bun build src/content.ts --outfile dist/content.js --format iife --watch --define 'process.env.TYPESTAMP_API_URL=\"http://localhost:3000\"'"
+    "build": "bun build src/content.ts src/popup.ts src/background.ts --outdir dist --format iife --define 'process.env.TYPESTAMP_API_URL=\"https://typestamp.com\"'",
+    "dev": "bun build src/content.ts src/popup.ts src/background.ts --outdir dist --format iife --watch --define 'process.env.TYPESTAMP_API_URL=\"http://localhost:5000\"'"
   },
   "dependencies": {
     "@typestamp/tracker": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.268"
   }
 }

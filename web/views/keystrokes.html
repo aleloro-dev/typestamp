@@ -109,10 +109,10 @@
                         suspend: "#e8a44a",
                     };
                     const tr = document.createElement("tr");
-                    tr.style.borderBottom = "1px solid #333";
+                    tr.style.borderBottom = "1px solid #eee";
                     tr.style.color = isControl
-                        ? (lifecycleColors[e.type] ?? "#888")
-                        : "beige";
+                        ? (lifecycleColors[e.type] ?? "#999")
+                        : "#222";
                     tr.innerHTML = `
                         <td class="audit-td audit-td-index">${i + 1}</td>
                         <td class="audit-td">${e.type}</td>
