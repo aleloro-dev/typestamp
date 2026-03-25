@@ -146,14 +146,14 @@ const app = new Elysia()
     );
   })
   // Redirect old /proofs/:id URLs to /:id
-  .get("/proofs/:id", ({ params, set }) => {
-    set.redirect = `/${params.id}`;
-    set.status = 301;
-  })
-  .get("/proofs/:id/keystrokes", ({ params, set }) => {
-    set.redirect = `/${params.id}/keystrokes`;
-    set.status = 301;
-  })
+  .get("/proofs/:id", ({ params }) => new Response(null, {
+    status: 301,
+    headers: { Location: `/${params.id}` },
+  }))
+  .get("/proofs/:id/keystrokes", ({ params }) => new Response(null, {
+    status: 301,
+    headers: { Location: `/${params.id}/keystrokes` },
+  }))
   .get("/:slug", async ({ set }) => {
     set.headers["content-type"] = "text/html; charset=utf-8";
     return layout("Typestamp", mainNav, await view("proof"));
