@@ -272,7 +272,7 @@ const app = new Elysia()
               lastStart = null;
             }
           }
-          active_duration = Math.round(active_duration / 1000);
+          active_duration = Math.round(active_duration);
 
           const finishEvent = (
             events as {
@@ -288,7 +288,6 @@ const app = new Elysia()
 
           const auditSignals = extractAuditSignals(events).map((s) => ({
             id: nanoid(10),
-            proof_id: id,
             type: s.type,
             timestamp: s.timestamp,
             char_count: s.length,

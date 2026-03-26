@@ -223,6 +223,7 @@
     let turnstileWidgetId = null;
 
     window.initTurnstile = function() {
+        if (!TURNSTILE_ENABLED) return;
         const container = document.getElementById("cf-turnstile");
         turnstileWidgetId = turnstile.render(container, {
             sitekey: container.dataset.sitekey,
@@ -259,7 +260,7 @@
         const turnstileToken = await requestTurnstileToken();
         if (TURNSTILE_ENABLED) turnstile.reset(turnstileWidgetId);
 
-        if (!turnstileToken) {
+        if (TURNSTILE_ENABLED && !turnstileToken) {
             errorEl.textContent = "Verification failed. Please try again.";
             errorEl.classList.remove("hidden");
             saveBtn.disabled = false;
@@ -275,7 +276,7 @@
                     content,
                     events,
                     ref_id: refId ?? null,
-                    turnstile_token: turnstileToken,
+                    ...(turnstileToken ? { turnstile_token: turnstileToken } : {}),
                     source_host: window.location.hostname,
                 }),
             });

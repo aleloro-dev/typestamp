@@ -212,12 +212,12 @@ async function refresh() {
   statsRow.appendChild(dot);
   statsRow.appendChild(charsEl);
   statsRow.appendChild(durEl);
-  statsBox.appendChild(statsRow);
   if (elementLabel) {
-    const lbl = make("div", "element-label");
+    const lbl = make("span", "element-label");
     lbl.textContent = elementLabel;
-    statsBox.appendChild(lbl);
+    statsRow.appendChild(lbl);
   }
+  statsBox.appendChild(statsRow);
   body.appendChild(statsBox);
 
   const actions = make("div", "actions");

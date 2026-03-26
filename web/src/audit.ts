@@ -5,6 +5,8 @@ const FUNCTIONAL_KEYS = new Set([
   "Home", "End", "PageUp", "PageDown",
 ]);
 
+const ANALYTICS_KEYS = new Set([" ", ".", ",", ":", ";", "!", "?"]);
+
 export type ProofEvent = {
   type: string;
   timestamp: number;
@@ -25,6 +27,6 @@ export function extractAuditSignals(events: ProofEvent[]): AuditSignal[] {
     const { key, ...rest } = e;
     return key && FUNCTIONAL_KEYS.has(key)
       ? { ...rest, type: "key_func" as const, key }
-      : { ...rest, type: "key_char" as const };
+      : { ...rest, type: "key_char" as const, ...(key && ANALYTICS_KEYS.has(key) ? { key } : {}) };
   });
 }

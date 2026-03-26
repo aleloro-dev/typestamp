@@ -9,11 +9,13 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      width: 280px;
+      width: 304px;
       font-family: "Inter", sans-serif;
       font-size: 13px;
       color: #111;
       background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
     }
 
     #root { padding: 16px; }
@@ -33,7 +35,8 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 160px;
+      max-width: 120px;
+      margin-left: auto;
     }
 
     .stats {
@@ -57,6 +60,8 @@
       border-radius: 50%;
       background: #ccc;
       flex-shrink: 0;
+      display: flex;
+      align-self: center;
     }
     .dot.recording { background: #ef4444; }
     .dot.saveable { background: #22c55e; }
