@@ -15,6 +15,10 @@
     </p>
     <p class="hint">The content must have no less than 200 characters.</p>
 
+    <div id="mobile-block" class="hidden">
+        <p class="hint">Typestamp sessions are not supported on mobile devices. Please use a desktop browser with a physical keyboard.</p>
+    </div>
+
     <div id="ref-banner" class="ref-banner hidden">
         <span id="ref-label"></span>
     </div>
@@ -71,6 +75,15 @@
 
 <script>var TURNSTILE_ENABLED = __TURNSTILE_ENABLED__;</script>
 <script type="module">
+    const isMobile = window.matchMedia("(pointer: coarse)").matches;
+    if (isMobile) {
+        document.getElementById("mobile-block").classList.remove("hidden");
+        document.querySelector(".controls-top").classList.add("hidden");
+        document.getElementById("editor").classList.add("hidden");
+        document.querySelector(".editor-bottom").classList.add("hidden");
+        document.getElementById("restore-banner").classList.add("hidden");
+    }
+
     import { Tracker } from '/tracker.js';
 
     const editor = document.getElementById("editor");
