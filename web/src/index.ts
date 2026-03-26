@@ -145,6 +145,10 @@ const app = new Elysia()
       await view("interpret"),
     );
   })
+  .get("/privacy", async ({ set }) => {
+    set.headers["content-type"] = "text/html; charset=utf-8";
+    return layout("Privacy Policy - Typestamp", [], await view("privacy"));
+  })
   // Redirect old /proofs/:id URLs to /:id
   .get("/proofs/:id", ({ params }) => new Response(null, {
     status: 301,

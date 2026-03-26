@@ -46,7 +46,10 @@ export async function layout(
                 <a href="/use-cases">Use cases</a>
                 <a href="/interpret">How to interpret a typestamp</a>
             </div>
-            <a class="contact-btn" href="mailto:hi@typestamp.com">Contact</a>
+            <div class="footer-right">
+                <a class="contact-btn" href="mailto:hi@typestamp.com">Contact</a>
+                <a href="/privacy">Privacy policy</a>
+            </div>
         </footer>
     </body>
 </html>`;

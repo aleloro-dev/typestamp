@@ -265,7 +265,11 @@ textarea.error {
     gap: 0.4rem;
 }
 
-.contact-btn {
+.footer-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
     margin-left: auto;
     align-self: flex-start;
 }
