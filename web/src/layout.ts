@@ -25,6 +25,9 @@ export async function layout(
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>${title}</title>
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+        <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png">
         <style>${css}</style>
         <script defer src="https://cloud.umami.is/script.js" data-website-id="374b83cb-ded3-4cf2-9c62-0c89e30f8f47"></script>
     </head>

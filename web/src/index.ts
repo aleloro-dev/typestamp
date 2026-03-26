@@ -410,6 +410,18 @@ const app = new Elysia()
         };
       }),
   )
+  .get("/favicon-16.png", ({ set }) => {
+    set.headers["content-type"] = "image/png";
+    return Bun.file("public/favicon-16.png");
+  })
+  .get("/favicon-32.png", ({ set }) => {
+    set.headers["content-type"] = "image/png";
+    return Bun.file("public/favicon-32.png");
+  })
+  .get("/favicon-48.png", ({ set }) => {
+    set.headers["content-type"] = "image/png";
+    return Bun.file("public/favicon-48.png");
+  })
   .get("/tracker.js", async ({ set }) => {
     set.headers["content-type"] = "application/javascript; charset=utf-8";
     return Bun.file("public/tracker.js").text();
