@@ -14,6 +14,7 @@ export type ProofEvent = {
   length: number;
   typed: number;
   pastedLength?: number;
+  _t?: true;
 };
 
 export type AuditSignal = Omit<ProofEvent, "type" | "key"> & {

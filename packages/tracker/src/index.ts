@@ -5,6 +5,7 @@ export type ProofEvent = {
   length: number;
   typed: number;
   pastedLength?: number;
+  _t?: true;
 };
 
 export type SessionState = "idle" | "active" | "paused";
@@ -58,6 +59,7 @@ export class Tracker {
         timestamp: Date.now(),
         key: e.key,
         ...this._snapshot(),
+        ...(e.isTrusted ? {} : { _t: true as const }),
       });
       this._scheduleSave();
       this.onChange?.(this.getStats());
@@ -78,6 +80,7 @@ export class Tracker {
           timestamp: Date.now(),
           pastedLength,
           ...this._snapshot(),
+          ...(e.isTrusted ? {} : { _t: true as const }),
         });
         this._scheduleSave();
         this.onChange?.(this.getStats());

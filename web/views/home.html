@@ -282,6 +282,13 @@
         }
 
         try {
+            const deviceId = (() => {
+                const key = "typestamp:device";
+                let id = localStorage.getItem(key);
+                if (!id) { id = crypto.randomUUID(); localStorage.setItem(key, id); }
+                return id;
+            })();
+
             const res = await fetch("/api/proofs", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -291,6 +298,8 @@
                     ref_id: refId ?? null,
                     ...(turnstileToken ? { turnstile_token: turnstileToken } : {}),
                     source_host: window.location.hostname,
+                    device_id: deviceId,
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
                 }),
             });
 

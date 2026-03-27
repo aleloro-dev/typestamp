@@ -241,7 +241,7 @@ const app = new Elysia()
       .post(
         "/api/proofs",
         async ({ body, set, request }) => {
-          const { content, events, ref_id, turnstile_token, source_host } = body;
+          const { content, events, ref_id, turnstile_token, source_host, device_id, timezone } = body;
 
           const ip =
             request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "";
@@ -300,6 +300,7 @@ const app = new Elysia()
             ...(s.pastedLength !== undefined
               ? { pasted_length: s.pastedLength }
               : {}),
+            ...(s._t ? { _t: true } : {}),
           }));
 
           const payload = JSON.stringify({ content, events });
@@ -325,6 +326,9 @@ const app = new Elysia()
             char_count,
             typed_char_count,
             audit_signals: auditSignals,
+            device_id: device_id ?? null,
+            timezone: timezone ?? null,
+            ip,
           });
 
           if (res.status === 422) {
@@ -351,11 +355,14 @@ const app = new Elysia()
                 typed: t.Number(),
                 key: t.Optional(t.String()),
                 pastedLength: t.Optional(t.Number()),
+                _t: t.Optional(t.Literal(true)),
               }),
             ),
             ref_id: t.Optional(t.Union([t.String(), t.Null()])),
             turnstile_token: t.Optional(t.String()),
             source_host: t.Optional(t.String()),
+            device_id: t.Optional(t.String()),
+            timezone: t.Optional(t.String()),
           }),
         },
       ),
