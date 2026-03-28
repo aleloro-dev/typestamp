@@ -38,7 +38,7 @@ export async function layout(
         </div>
             <div class="nav">
                 ${navHtml}
-                <a href="https://github.com/aleloro-dev/typestamp" target="_blank" rel="noopener noreferrer">Github</a>
+                <a class="primary" href="https://chromewebstore.google.com/detail/typestamp/eiijgknnafpmcoijmjecdofajojfielb" target="_blank" rel="noopener noreferrer">Get the extension</a>
             </div>
         </div>
         ${body}
@@ -46,12 +46,14 @@ export async function layout(
             <div class="footer-links">
                 ${footerCta ? `<a href="/">Create a typestamp</a>` : ""}
                 ${footerRef ? `<a href="/ref">Create a reference</a>` : ""}
+                <a href="/about">How it works</a>
                 <a href="/use-cases">Use cases</a>
                 <a href="/interpret">How to interpret a typestamp</a>
             </div>
             <div class="footer-right">
                 <a class="contact-btn" href="mailto:hi@typestamp.com">Contact</a>
-                <a href="/privacy">Privacy policy</a>
+                <a href="https://github.com/aleloro-dev/typestamp" target="_blank" rel="noopener noreferrer">Github</a>
+                <a href="/privacy">Privacy</a>
             </div>
         </footer>
     </body>

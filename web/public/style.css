@@ -129,9 +129,11 @@ textarea {
 
 .controls-top {
     display: flex;
+    align-items: center;
     gap: 0.75rem;
     margin-bottom: 1rem;
 }
+
 
 .editor-bottom {
     display: flex;
@@ -168,8 +170,14 @@ button {
 }
 
 .primary {
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border: 1px solid #222;
+    border-radius: 8px;
     background: #222;
     color: #fff;
+    text-decoration: none;
+    opacity: 1;
 }
 
 button:disabled {
@@ -277,6 +285,12 @@ textarea.error {
 .nav {
     display: flex;
     gap: 1rem;
+    align-items: center;
+}
+
+.nav .primary {
+    font-size: 0.9rem;
+    padding: 0.25rem 0.75rem;
 }
 
 .hidden {

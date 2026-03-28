@@ -1,19 +1,12 @@
 <div class="container">
     <h1>Prove the effort behind your writing</h1>
     <p class="hint">
-        Typestamp allows you to produce proofs of writing effort. We call these 'typestamps'.
-    </p>
-    <p class="hint">
-        To produce a typestamp, you have to start a writing session where all your keystrokes are tracked with precise timestamps.
-    </p>
-    <p class="hint">
-        Once saved, your typestamp is encrypted, stored, and ready to share with a link.
+        Typestamp tracks all your keystrokes with precise timestamps, encrypts the data, and generates an audit trail you can share with a link - a typestamp.
     </p>
     <p class="hint">
         When you click on 'Start session' the tracking will begin. You can pause
         it and resume it if needed.
     </p>
-    <p class="hint">The content must have no less than 200 characters.</p>
 
     <div id="mobile-block" class="hidden">
         <p class="hint">Typestamp sessions are not supported on mobile devices. Please use a desktop browser with a physical keyboard.</p>
@@ -30,6 +23,8 @@
             <button id="discard-btn">Discard</button>
         </div>
     </div>
+
+    <p id="session-notice" class="hint">The content must be original and longer than 200 characters.</p>
 
     <div class="controls-top">
         <button class="primary" id="start-btn">Start session</button>
@@ -82,6 +77,7 @@
         document.getElementById("editor").classList.add("hidden");
         document.querySelector(".editor-bottom").classList.add("hidden");
         document.getElementById("restore-banner").classList.add("hidden");
+        document.getElementById("session-notice").classList.add("hidden");
     }
 
     import { Tracker } from '/tracker.js';

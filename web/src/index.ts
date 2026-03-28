@@ -104,7 +104,7 @@ function generateSlug(): string {
   return `${name}-${number}`;
 }
 
-const mainNav = [{ href: "/about", text: "How it works" }];
+const mainNav: { href: string; text: string }[] = [];
 
 const app = new Elysia()
   // Pages
@@ -123,7 +123,7 @@ const app = new Elysia()
     set.headers["content-type"] = "text/html; charset=utf-8";
     return layout(
       "Create a reference - Typestamp",
-      [{ href: "/about", text: "How it works" }],
+      [],
       await view("ref"),
       true,
       false,
