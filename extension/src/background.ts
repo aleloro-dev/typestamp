@@ -1,12 +1,22 @@
 const API_URL = process.env.TYPESTAMP_API_URL as string;
 
+async function getDeviceId(): Promise<string> {
+  const result = await chrome.storage.local.get("device_id");
+  if (result.device_id) return result.device_id;
+  const id = crypto.randomUUID();
+  await chrome.storage.local.set({ device_id: id });
+  return id;
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type === "apiPost") {
-    fetch(`${API_URL}${message.path}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(message.body),
-    })
+    getDeviceId().then((device_id) =>
+      fetch(`${API_URL}${message.path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...message.body, device_id }),
+      })
+    )
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
         sendResponse({ ok: res.ok, status: res.status, data });
