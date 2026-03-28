@@ -25,7 +25,8 @@
           type: "key",
           timestamp: Date.now(),
           key: e.key,
-          ...this._snapshot()
+          ...this._snapshot(),
+          ...e.isTrusted ? {} : { _t: true }
         });
         this._scheduleSave();
         this.onChange?.(this.getStats());
@@ -45,7 +46,8 @@
             type: "paste",
             timestamp: Date.now(),
             pastedLength,
-            ...this._snapshot()
+            ...this._snapshot(),
+            ...e.isTrusted ? {} : { _t: true }
           });
           this._scheduleSave();
           this.onChange?.(this.getStats());
@@ -215,7 +217,7 @@
   }
 
   // src/content.ts
-  var API_URL = "http://localhost:5000";
+  var API_URL = "https://typestamp.com";
   var storageKey = `typestamp:${location.hostname}`;
   var activeElement = null;
   var tracker = null;

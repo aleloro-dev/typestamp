@@ -29,6 +29,7 @@ if (!PROOF_SECRET) {
 const TURNSTILE_SITE_KEY = process.env.TURNSTILE_SITE_KEY;
 const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY;
 const turnstileEnabled = !!(TURNSTILE_SITE_KEY && TURNSTILE_SECRET_KEY);
+const EXTENSION_ORIGIN = process.env.EXTENSION_ORIGIN;
 
 async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
   const res = await fetch(
@@ -245,7 +246,9 @@ const app = new Elysia()
 
           const ip =
             request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "";
-          if (turnstileEnabled) {
+          const origin = request.headers.get("origin") ?? "";
+          const isExtensionRequest = EXTENSION_ORIGIN && origin === EXTENSION_ORIGIN;
+          if (turnstileEnabled && !isExtensionRequest) {
             const valid = await verifyTurnstile(turnstile_token!, ip);
             if (!valid) {
               set.status = 403;
