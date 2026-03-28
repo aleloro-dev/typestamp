@@ -93,29 +93,24 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === "save") {
     if (!tracker) { sendResponse({ ok: false, error: "No tracker" }); return false; }
     const { events, content } = tracker.finish();
-    fetch(`${API_URL}/api/proofs`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content, events, source_host: location.hostname }),
-    })
-      .then(async (res) => {
-        if (!res.ok) {
-          if (res.status === 429) throw new Error("You've sent too many typestamps recently. Wait a while to send more.");
-          const err = await res.json().catch(() => ({})) as { error?: string };
-          throw new Error(err.error || `Error ${res.status}`);
+    chrome.runtime.sendMessage(
+      { type: "apiPost", path: "/api/proofs", body: { content, events, source_host: location.hostname } },
+      (res: { ok: boolean; status: number; data: { slug?: string; error?: string } }) => {
+        if (!res?.ok) {
+          if (res?.status === 429) {
+            sendResponse({ ok: false, error: "You've sent too many typestamps recently. Wait a while to send more." });
+          } else {
+            sendResponse({ ok: false, error: res?.data?.error || `Error ${res?.status}` });
+          }
+          return;
         }
-        return res.json() as Promise<{ slug: string }>;
-      })
-      .then(({ slug }) => {
         tracker!.clearSavedSession();
         tracker!.destroy();
         tracker = null;
         sessionLocked = false;
-        sendResponse({ ok: true, url: `${API_URL}/${slug}` });
-      })
-      .catch((err: unknown) => {
-        sendResponse({ ok: false, error: err instanceof Error ? err.message : "Failed to save" });
-      });
+        sendResponse({ ok: true, url: `${API_URL}/${res.data.slug}` });
+      }
+    );
     return true; // keep channel open for async response
   }
 

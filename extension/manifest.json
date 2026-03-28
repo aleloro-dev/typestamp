@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Typestamp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Prove the effort behind your writing on any website.",
   "icons": {
     "16": "icons/icon-16.png",

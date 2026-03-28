@@ -1,6 +1,18 @@
 (() => {
   // src/background.ts
-  chrome.runtime.onMessage.addListener((message, sender) => {
+  var API_URL = "https://typestamp.com";
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message?.type === "apiPost") {
+      fetch(`${API_URL}${message.path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(message.body)
+      }).then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        sendResponse({ ok: res.ok, status: res.status, data });
+      }).catch(() => sendResponse({ ok: false, status: 0, data: {} }));
+      return true;
+    }
     if (message?.type !== "setState")
       return;
     const tabId = sender.tab?.id;

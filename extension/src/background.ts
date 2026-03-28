@@ -1,4 +1,20 @@
-chrome.runtime.onMessage.addListener((message, sender) => {
+const API_URL = process.env.TYPESTAMP_API_URL as string;
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message?.type === "apiPost") {
+    fetch(`${API_URL}${message.path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(message.body),
+    })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        sendResponse({ ok: res.ok, status: res.status, data });
+      })
+      .catch(() => sendResponse({ ok: false, status: 0, data: {} }));
+    return true; // keep channel open for async response
+  }
+
   if (message?.type !== "setState") return;
   const tabId = sender.tab?.id;
   if (tabId == null) return;
